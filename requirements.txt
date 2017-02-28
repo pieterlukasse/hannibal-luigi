@@ -1,0 +1,5 @@
+# use the forked version with docker support
+pip install git+https://github.com/opentargets/luigi.git
+docker
+
+
