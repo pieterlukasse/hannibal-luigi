@@ -3,7 +3,7 @@ docker==2.1.0
 docker-pycreds==0.2.1
 docutils==0.13.1
 lockfile==0.12.2
--e git+https://github.com/opentargets/luigi.git@8a4d331575a2b4d2a4b0d9fc2bf794192bd80afc#egg=luigi
+-e git+https://github.com/opentargets/luigi.git@master#egg=luigi
 packaging==16.8
 pyparsing==2.1.10
 python-daemon==2.1.2
