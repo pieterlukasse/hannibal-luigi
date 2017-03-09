@@ -1,4 +1,4 @@
-appdirs==1.4.2
+appdirs
 docker==2.1.0
 docker-pycreds==0.2.1
 docutils==0.13.1
@@ -11,3 +11,4 @@ requests==2.13.0
 six==1.10.0
 tornado==4.4.2
 websocket-client==0.40.0
+elasticsearch>=2.0.0,<3.0.0
