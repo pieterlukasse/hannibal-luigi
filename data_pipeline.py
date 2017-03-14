@@ -1,19 +1,19 @@
 import unittest
 import logging
-import datetime
+from time import strftime
 import os
 import luigi
 from luigi.contrib.docker_runner import DockerTask
 from luigi.contrib.esindex import ElasticsearchTarget
 
-from os.path import expanduser
-homedir = expanduser("~")
 
 logger = logging.getLogger('luigi-interface')
 
-BRANCH = "latest"
 
 class OpenTargETLTask(DockerTask):
+
+    run_options = luigi.Parameter(default='-h')
+    datapipeline_branch = luigi.Parameter(default='latest')
 
     # find which ES to point to. For now we save the status and the data
     # in the same cluster
@@ -29,21 +29,26 @@ class OpenTargETLTask(DockerTask):
     marker_doc_type = luigi.configuration.get_config().get('elasticsearch',
                                                            'marker-doc-type', 'entry')
 
-    image = ':'.join(["eu.gcr.io/open-targets/data_pipeline", BRANCH])
     volumes=[os.getcwd() + '/data:/tmp/data']
     network_mode='host'
     environment = {
         "ELASTICSEARCH_HOST": eshost,
         "ELASTICSEARCH_PORT": esport,
         "CTTV_DUMP_FOLDER":"/tmp/data",
-        "CTTV_DATA_VERSION":"test-17.02"
+        "CTTV_DATA_VERSION": strftime("%Y_%b_week_%W")
     }
 
-    run_options = luigi.Parameter(default='-h')
+
+    @property
+    def image(self):
+        return ':'.join(["eu.gcr.io/open-targets/data_pipeline", self.datapipeline_branch])
+    
+
 
     @property
     def command(self):
-        return ['python','run.py',run_options]
+        return ['python','run.py',self.run_options]
+
 
     def output(self):
         """
@@ -56,7 +61,6 @@ class OpenTargETLTask(DockerTask):
             doc_type=self.marker_doc_type,
             update_id=self.task_id
             )
-
 
 
     def run(self):
@@ -73,9 +77,13 @@ class OpenTargETLTask(DockerTask):
 
 
 class EFOdata(OpenTargETLTask):
-    auto_remove= False
-    
-    
+    run_options = '--efo'
+
+class ECOdata(OpenTargETLTask):
+    run_options = '--eco'
+
+class data(OpenTargETLTask):
+    run_options = '--efo'
         
 
 
