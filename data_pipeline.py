@@ -1,5 +1,6 @@
 import unittest
 import logging
+import datetime
 from time import strftime
 import os
 import luigi
@@ -14,6 +15,7 @@ class OpenTargETLTask(DockerTask):
 
     run_options = luigi.Parameter(default='-h')
     datapipeline_branch = luigi.Parameter(default='latest')
+    date = luigi.DateParameter(default=datetime.date.today())
 
     # find which ES to point to. For now we save the status and the data
     # in the same cluster
@@ -31,12 +33,15 @@ class OpenTargETLTask(DockerTask):
 
     volumes=[os.getcwd() + '/data:/tmp/data']
     network_mode='host'
-    environment = {
-        "ELASTICSEARCH_HOST": eshost,
-        "ELASTICSEARCH_PORT": esport,
-        "CTTV_DUMP_FOLDER":"/tmp/data",
-        "CTTV_DATA_VERSION": strftime("%Y_%b_week_%W")
-    }
+
+    @property
+    def environment(self):
+        return {
+            "ELASTICSEARCH_HOST": self.eshost,
+            "ELASTICSEARCH_PORT": self.esport,
+            "CTTV_DUMP_FOLDER":"/tmp/data",
+            "CTTV_DATA_VERSION": self.date.strftime('%y.%m.wk%W')
+            }
 
 
     @property
