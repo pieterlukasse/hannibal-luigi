@@ -81,19 +81,12 @@ class OpenTargETLTask(DockerTask):
 
 
 
-class EFOdata(OpenTargETLTask):
-    run_options = '--efo'
-
-class ECOdata(OpenTargETLTask):
-    run_options = '--eco'
-
-class data(OpenTargETLTask):
-    run_options = '--efo'
-        
-
-
 class GeneData(OpenTargETLTask):
-    pass
+    def requires(self):
+        return [OpenTargETLTask(run_options=opt) for opt in ['--eco','--efo']]
+
+    run_options = '--gen'
+
 
 class Validate(OpenTargETLTask):
     '''
