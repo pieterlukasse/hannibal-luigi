@@ -93,20 +93,31 @@ class Validate(OpenTargETLTask):
     Run the validation step, which takes the JSON submitted by each provider
     and makes sure they adhere to our JSON schema
     '''
+    url = luigi.Parameter()
 
     def requires(self):
         return [OpenTargETLTask(run_options=opt) for opt in ['--eco','--efo','--uni']]
 
-    run_options = ['--val', '--remote-file','https://storage.googleapis.com/opentargets-data-sources/16.12/cttv001_gene2phenotype-29-07-2016.json.gz']
+    run_options = ['--val', '--remote-file', self.url]
 
 
-class ValidateG2P(Validate):
+class ValidateAll(luigi.WrapperTask):
+    ''' 
+    Dummy task that triggers execution of all validate tasks
+    Specify here the list of evidence
     '''
-    the run method is defined on Validate with no parameters, and then this concrete subclass defines parameters
-    '''
-    url = luigi.Parameter()
-    
-    url = 'https://storage.googleapis.com/opentargets-data-sources/16.12/cttv001_gene2phenotype-29-07-2016.json.gz'
+    sources = [
+        'https://storage.googleapis.com/otar001-core/cttv001_gene2phenotype-15-02-2017.json.gz',
+        'https://storage.googleapis.com/otar001-core/cttv001_intogen-15-02-2017.json.gz',
+        'https://storage.googleapis.com/otar001-core/cttv001_phenodigm-15-02-2017.json.gz',
+        'https://storage.googleapis.com/otar006-reactome/cttv006-21-02-2017.json.gz',
+        'https://storage.googleapis.com/otar007-cosmic/cttv007-17-02-2017.json.gz',
+    ]
+
+    def requires(self):
+        for url in sources:
+            yield Validate(url=url)
+
 
 
 
