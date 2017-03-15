@@ -52,7 +52,7 @@ class OpenTargETLTask(DockerTask):
 
     @property
     def command(self):
-        return ['python','run.py',self.run_options]
+        return ['python','run.py', *self.run_options]
 
 
     def output(self):
@@ -85,7 +85,7 @@ class GeneData(OpenTargETLTask):
     def requires(self):
         return [OpenTargETLTask(run_options=opt) for opt in ['--eco','--efo']]
 
-    run_options = '--gen'
+    run_options = ['--gen']
 
 
 class Validate(OpenTargETLTask):
@@ -94,14 +94,20 @@ class Validate(OpenTargETLTask):
     and makes sure they adhere to our JSON schema
     '''
 
-    command = ['python', 'run.py', '--val', '--remote-file','https://storage.googleapis.com/opentargets-data-sources/16.12/cttv001_gene2phenotype-29-07-2016.json.gz']
-
-    
     def requires(self):
-        return []
- 
-    def output(self):
-        return luigi.LocalTarget("test-val.txt")
+        return [OpenTargETLTask(run_options=opt) for opt in ['--eco','--efo','--uni']]
+
+    run_options = ['--val', '--remote-file','https://storage.googleapis.com/opentargets-data-sources/16.12/cttv001_gene2phenotype-29-07-2016.json.gz']
+
+
+class ValidateG2P(Validate):
+    '''
+    the run method is defined on Validate with no parameters, and then this concrete subclass defines parameters
+    '''
+    url = luigi.Parameter()
+    
+    url = 'https://storage.googleapis.com/opentargets-data-sources/16.12/cttv001_gene2phenotype-29-07-2016.json.gz'
+
 
 
 class EvidenceObjectCreation(OpenTargETLTask):
