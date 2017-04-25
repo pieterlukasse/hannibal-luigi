@@ -6,13 +6,19 @@ import os
 import luigi
 from luigi.contrib.docker_runner import DockerTask
 from luigi.contrib.esindex import ElasticsearchTarget
-
+import random
 
 logger = logging.getLogger('luigi-interface')
 
 
 class OpenTargETLTask(DockerTask):
-
+    '''
+    Subclass the DockerTask in the Luigi Docker Runner we contributed to. This
+    class:
+        - points to ES as a backend
+        - uses our mrtarget (ex data_pipeline) containers to run jobs.
+        - relies on the local /tmp folder to store data for each docker run
+    '''
     run_options = luigi.Parameter(default='-h')
     datapipeline_branch = luigi.Parameter(default='latest')
     date = luigi.DateParameter(default=datetime.date.today())
@@ -36,6 +42,8 @@ class OpenTargETLTask(DockerTask):
 
     @property
     def environment(self):
+        ''' pass the environment variables required by the container
+        '''
         return {
             "ELASTICSEARCH_HOST": self.eshost,
             "ELASTICSEARCH_PORT": self.esport,
@@ -46,13 +54,15 @@ class OpenTargETLTask(DockerTask):
 
     @property
     def image(self):
+        '''
+        pick the container from our GCR repository
+        '''
         return ':'.join(["eu.gcr.io/open-targets/data_pipeline", self.datapipeline_branch])
     
 
-
     @property
     def command(self):
-        return ['python','run.py', *self.run_options]
+        return ['python', 'run.py', self.run_options]
 
 
     def output(self):
@@ -75,6 +85,7 @@ class OpenTargETLTask(DockerTask):
         may prefer to create a local target, which does not implement a touch()
         method.
         '''
+        name =  self.run_options + str(random.randint(1,10))
         DockerTask.run(self)
         self.output().touch()
 
@@ -83,7 +94,7 @@ class OpenTargETLTask(DockerTask):
 
 class GeneData(OpenTargETLTask):
     def requires(self):
-        return [OpenTargETLTask(run_options=opt) for opt in ['--eco','--efo']]
+        return [OpenTargETLTask(run_options=opt) for opt in ['--uni','--ens','--hpa','--rea']]
 
     run_options = ['--gen']
 
@@ -96,9 +107,9 @@ class Validate(OpenTargETLTask):
     url = luigi.Parameter()
 
     def requires(self):
-        return [OpenTargETLTask(run_options=opt) for opt in ['--eco','--efo','--uni']]
+        return [OpenTargETLTask(run_options=opt) for opt in ['--gen','--rea','--efo','--eco']]
 
-    run_options = ['--val', '--remote-file', self.url]
+    # run_options = ['--val', '--remote-file', self.url]
 
 
 class ValidateAll(luigi.WrapperTask):
