@@ -1,7 +1,5 @@
-import unittest
 import logging
 import datetime
-from time import strftime
 import os
 import luigi
 from luigi.contrib.docker_runner import DockerTask
@@ -22,6 +20,9 @@ class OpenTargETLTask(DockerTask):
     run_options = luigi.Parameter(default='-h')
     datapipeline_branch = luigi.Parameter(default='latest')
     date = luigi.DateParameter(default=datetime.date.today())
+
+    name = run_options + str(random.randint(1,10))
+
 
     # find which ES to point to. For now we save the status and the data
     # in the same cluster
@@ -85,7 +86,6 @@ class OpenTargETLTask(DockerTask):
         may prefer to create a local target, which does not implement a touch()
         method.
         '''
-        name =  self.run_options + str(random.randint(1,10))
         DockerTask.run(self)
         self.output().touch()
 
