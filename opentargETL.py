@@ -18,14 +18,17 @@ class OpenTargETLTask(DockerTask):
         - relies on the local /tmp folder to store data for each docker run
     '''
     run_options = luigi.Parameter(default='-h')
-    datapipeline_branch = luigi.Parameter(default='latest')
+    datapipeline_branch = luigi.Parameter(default='master')
     date = luigi.DateParameter(default=datetime.date.today())
 
-    name = run_options + str(random.randint(1,10))
 
 
-    # find which ES to point to. For now we save the status and the data
-    # in the same cluster
+    # find which ES to point to. NOTE: this is only for the Luigi marker/status.
+    # For now we save the status and the data in the same cluster. BUT the
+    # pipeline actually operates on the cluster specified in the db.ini file.
+    # NOTE #2: we are going to save to ES for status because this eliminates the
+    # requirement for a local FS and does not introduce a dependency on S3,
+    # which one of our pharma partner may not be ready to take on
     eshost = luigi.configuration.get_config().get('elasticsearch',
                                                         'eshost', '127.0.0.1')
     esport = luigi.configuration.get_config().get('elasticsearch',
@@ -52,18 +55,24 @@ class OpenTargETLTask(DockerTask):
             "CTTV_DATA_VERSION": self.date.strftime('%y.%m.wk%W')
             }
 
+    @property
+    def name(self):
+        return 'mrtarget' + self.run_options[0] + str(random.randint(1,10))
 
     @property
     def image(self):
         '''
         pick the container from our GCR repository
         '''
-        return ':'.join(["eu.gcr.io/open-targets/data_pipeline", self.datapipeline_branch])
+        # return ':'.join(["eu.gcr.io/open-targets/data_pipeline", self.datapipeline_branch])
+        return 'alpine'
+
     
 
     @property
     def command(self):
-        return ['python', 'run.py', self.run_options]
+        # return ['python', 'run.py', self.run_options]
+        return '/bin/sh -c "echo "hello"; sleep 10; echo "hello again""'
 
 
     def output(self):
@@ -90,7 +99,8 @@ class OpenTargETLTask(DockerTask):
         self.output().touch()
 
 
-
+class UniProt(OpenTargETLTask):
+    run_options = ['--uni']
 
 class GeneData(OpenTargETLTask):
     def requires(self):
@@ -109,7 +119,7 @@ class Validate(OpenTargETLTask):
     def requires(self):
         return [OpenTargETLTask(run_options=opt) for opt in ['--gen','--rea','--efo','--eco']]
 
-    # run_options = ['--val', '--remote-file', self.url]
+    run_options = ['--val', '--remote-file', url]
 
 
 class ValidateAll(luigi.WrapperTask):
@@ -117,7 +127,7 @@ class ValidateAll(luigi.WrapperTask):
     Dummy task that triggers execution of all validate tasks
     Specify here the list of evidence
     '''
-    sources = [
+    t2d_evidence_sources = [
         'https://storage.googleapis.com/otar001-core/cttv001_gene2phenotype-15-02-2017.json.gz',
         'https://storage.googleapis.com/otar001-core/cttv001_intogen-15-02-2017.json.gz',
         'https://storage.googleapis.com/otar001-core/cttv001_phenodigm-15-02-2017.json.gz',
@@ -126,7 +136,7 @@ class ValidateAll(luigi.WrapperTask):
     ]
 
     def requires(self):
-        for url in sources:
+        for url in t2d_evidence_sources:
             yield Validate(url=url)
 
 
@@ -135,13 +145,14 @@ class ValidateAll(luigi.WrapperTask):
 class EvidenceObjectCreation(OpenTargETLTask):
     """
     Recreate evidence objects (JSON representations of each validated piece of evidence) and store them in the backend. 
-    
     TODO: run.py scope can be limited to a few objects. describe how and implement
     """
     command = ['python', 'run.py', '--evi']
 
+
 class AssociationObjectCreation(OpenTargETLTask):
     pass
+
 
 class AllPipeline(luigi.WrapperTask):
     date = luigi.DateParameter(default=datetime.date.today())
@@ -152,7 +163,7 @@ class AllPipeline(luigi.WrapperTask):
         yield AssociationObjectCreation(self.date)
 
 def main():
-    luigi.run(["HelpOptions","--local-scheduler"])
+    luigi.run(["UniProt","--local-scheduler"])
 
 if __name__ == '__main__':
     main()
