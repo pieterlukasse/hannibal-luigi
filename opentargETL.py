@@ -4,7 +4,7 @@ import os
 import luigi
 from luigi.contrib.docker_runner import DockerTask
 from luigi.contrib.esindex import ElasticsearchTarget
-import random
+import uuid
 
 logger = logging.getLogger('luigi-interface')
 
@@ -39,12 +39,13 @@ class OpenTargETLTask(DockerTask):
     # read from the config file how to call the marker index, where
     # to store the status of each task.
     marker_index = luigi.configuration.get_config().get('elasticsearch',
-                                                        'marker-index', 'update_log')
+                                                        'marker-index', 'luigi_status_log')
     marker_doc_type = luigi.configuration.get_config().get('elasticsearch',
                                                            'marker-doc-type', 'entry')
 
     volumes = [os.getcwd() + '/data:/tmp/data']
     network_mode = 'host'
+    auto_remove = False
 
     @property
     def environment(self):
@@ -59,23 +60,21 @@ class OpenTargETLTask(DockerTask):
 
     @property
     def name(self):
-        return 'mrtarget' + self.run_options[0] + str(random.randint(1, 10))
+        return '-'.join(['mrT', self.datapipeline_branch, 
+                         self.run_options[0].lstrip('-'),
+                         str(uuid.uuid4().hex[:8])])
 
     @property
     def image(self):
         '''
         pick the container from our GCR repository
         '''
-        # return ':'.join(["eu.gcr.io/open-targets/data_pipeline", self.datapipeline_branch])
-        return 'alpine'
+        return ':'.join(["eu.gcr.io/open-targets/data_pipeline", self.datapipeline_branch])
 
-    
 
     @property
     def command(self):
-        # return ['python', 'run.py', self.run_options]
-        return '/bin/sh -c "echo "hello"; sleep 10; echo "hello again""'
-
+        return ' '.join(['mrtarget', *self.run_options])
 
     def output(self):
         """
@@ -100,6 +99,8 @@ class OpenTargETLTask(DockerTask):
         DockerTask.run(self)
         self.output().touch()
 
+class DryRun(OpenTargETLTask):
+    run_options = ['--dry-run']
 
 class UniProt(OpenTargETLTask):
     run_options = ['--uni']
