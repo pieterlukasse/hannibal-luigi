@@ -22,6 +22,8 @@ class OpenTargETLTask(DockerTask):
     date = luigi.DateParameter(default=datetime.date.today())
 
 
+    '''As we are running multiple workers, the output must be a resource that is
+       accessible by all workers, such as S3/distributedFileSys or database'''
 
     # find which ES to point to. NOTE: this is only for the Luigi marker/status.
     # For now we save the status and the data in the same cluster. BUT the
@@ -30,10 +32,10 @@ class OpenTargETLTask(DockerTask):
     # requirement for a local FS and does not introduce a dependency on S3,
     # which one of our pharma partner may not be ready to take on
     eshost = luigi.configuration.get_config().get('elasticsearch',
-                                                        'eshost', '127.0.0.1')
+                                                  'eshost', '127.0.0.1')
     esport = luigi.configuration.get_config().get('elasticsearch',
-                                                 'esport', '9200')
-    
+                                                  'esport', '9200')
+
     # read from the config file how to call the marker index, where
     # to store the status of each task.
     marker_index = luigi.configuration.get_config().get('elasticsearch',
@@ -41,8 +43,8 @@ class OpenTargETLTask(DockerTask):
     marker_doc_type = luigi.configuration.get_config().get('elasticsearch',
                                                            'marker-doc-type', 'entry')
 
-    volumes=[os.getcwd() + '/data:/tmp/data']
-    network_mode='host'
+    volumes = [os.getcwd() + '/data:/tmp/data']
+    network_mode = 'host'
 
     @property
     def environment(self):
@@ -57,7 +59,7 @@ class OpenTargETLTask(DockerTask):
 
     @property
     def name(self):
-        return 'mrtarget' + self.run_options[0] + str(random.randint(1,10))
+        return 'mrtarget' + self.run_options[0] + str(random.randint(1, 10))
 
     @property
     def image(self):
@@ -102,12 +104,26 @@ class OpenTargETLTask(DockerTask):
 class UniProt(OpenTargETLTask):
     run_options = ['--uni']
 
-class GeneData(OpenTargETLTask):
-    def requires(self):
-        return [OpenTargETLTask(run_options=opt) for opt in ['--uni','--ens','--hpa','--rea']]
+class Ensembl(OpenTargETLTask):
+    run_options = ['--ens']
 
+class Expression(OpenTargETLTask):
+    run_options = ['--hpa']
+
+class Reactome(OpenTargETLTask):
+    run_options = ['--rea']
+
+class GeneData(OpenTargETLTask):
     run_options = ['--gen']
 
+    def requires(self):
+        return UniProt(), Ensembl(), Expression(), Reactome()
+
+class EFO(OpenTargETLTask):
+    run_options = ['--efo']
+
+class ECO(OpenTargETLTask):
+    run_options = ['--eco']
 
 class Validate(OpenTargETLTask):
     '''
@@ -117,7 +133,7 @@ class Validate(OpenTargETLTask):
     url = luigi.Parameter()
 
     def requires(self):
-        return [OpenTargETLTask(run_options=opt) for opt in ['--gen','--rea','--efo','--eco']]
+        return GeneData(), Reactome(), EFO(), ECO()
 
     run_options = ['--val', '--remote-file', url]
 
@@ -163,7 +179,7 @@ class AllPipeline(luigi.WrapperTask):
         yield AssociationObjectCreation(self.date)
 
 def main():
-    luigi.run(["UniProt","--local-scheduler"])
+    luigi.run(["GeneData"])
 
 if __name__ == '__main__':
     main()
