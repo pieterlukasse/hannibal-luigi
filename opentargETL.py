@@ -35,7 +35,8 @@ class OpenTargETLTask(DockerTask):
                                                   'eshost', '127.0.0.1')
     esport = luigi.configuration.get_config().get('elasticsearch',
                                                   'esport', '9200')
-
+    esport = luigi.configuration.get_config().get('elasticsearch',
+                                                  'esauth', None)
     # read from the config file how to call the marker index, where
     # to store the status of each task.
     marker_index = luigi.configuration.get_config().get('elasticsearch',
@@ -83,6 +84,7 @@ class OpenTargETLTask(DockerTask):
         return ElasticsearchTarget(
             host=self.eshost,
             port=self.esport,
+            http_auth=self.esauth,
             index=self.marker_index,
             doc_type=self.marker_doc_type,
             update_id=self.task_id
