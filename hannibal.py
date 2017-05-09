@@ -9,7 +9,7 @@ import uuid
 logger = logging.getLogger('luigi-interface')
 
 
-class OpenTargETLTask(DockerTask):
+class MrTargetTask(DockerTask):
     '''
     Subclass the DockerTask in the Luigi Docker Runner we contributed to. This
     class:
@@ -18,7 +18,7 @@ class OpenTargETLTask(DockerTask):
         - relies on the local /tmp folder to store data for each docker run
     '''
     run_options = luigi.Parameter(default='-h')
-    datapipeline_branch = luigi.Parameter(default='master')
+    mrtarget_branch = luigi.Parameter(default='master')
     date = luigi.DateParameter(default=datetime.date.today())
 
 
@@ -61,7 +61,7 @@ class OpenTargETLTask(DockerTask):
 
     @property
     def name(self):
-        return '-'.join(['mrT', self.datapipeline_branch, 
+        return '-'.join(['mrT', self.mrtarget_branch, 
                          self.run_options[0].lstrip('-'),
                          str(uuid.uuid4().hex[:8])])
 
@@ -70,7 +70,7 @@ class OpenTargETLTask(DockerTask):
         '''
         pick the container from our GCR repository
         '''
-        return ':'.join(["eu.gcr.io/open-targets/data_pipeline", self.datapipeline_branch])
+        return ':'.join(["eu.gcr.io/open-targets/data_pipeline", self.mrtarget_branch])
 
 
     @property
@@ -101,34 +101,34 @@ class OpenTargETLTask(DockerTask):
         DockerTask.run(self)
         self.output().touch()
 
-class DryRun(OpenTargETLTask):
+class DryRun(MrTargetTask):
     run_options = ['--dry-run']
 
-class UniProt(OpenTargETLTask):
+class UniProt(MrTargetTask):
     run_options = ['--uni']
 
-class Ensembl(OpenTargETLTask):
+class Ensembl(MrTargetTask):
     run_options = ['--ens']
 
-class Expression(OpenTargETLTask):
+class Expression(MrTargetTask):
     run_options = ['--hpa']
 
-class Reactome(OpenTargETLTask):
+class Reactome(MrTargetTask):
     run_options = ['--rea']
 
-class GeneData(OpenTargETLTask):
+class GeneData(MrTargetTask):
     run_options = ['--gen']
 
     def requires(self):
         return UniProt(), Ensembl(), Expression(), Reactome()
 
-class EFO(OpenTargETLTask):
+class EFO(MrTargetTask):
     run_options = ['--efo']
 
-class ECO(OpenTargETLTask):
+class ECO(MrTargetTask):
     run_options = ['--eco']
 
-class Validate(OpenTargETLTask):
+class Validate(MrTargetTask):
     '''
     Run the validation step, which takes the JSON submitted by each provider
     and makes sure they adhere to our JSON schema
@@ -161,7 +161,7 @@ class ValidateAll(luigi.WrapperTask):
 
 
 
-class EvidenceObjectCreation(OpenTargETLTask):
+class EvidenceObjectCreation(MrTargetTask):
     """
     Recreate evidence objects (JSON representations of each validated piece of evidence) and store them in the backend. 
     TODO: run.py scope can be limited to a few objects. describe how and implement
@@ -169,7 +169,7 @@ class EvidenceObjectCreation(OpenTargETLTask):
     command = ['python', 'run.py', '--evi']
 
 
-class AssociationObjectCreation(OpenTargETLTask):
+class AssociationObjectCreation(MrTargetTask):
     pass
 
 
