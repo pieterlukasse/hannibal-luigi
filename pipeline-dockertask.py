@@ -70,7 +70,7 @@ class MrTargetTask(DockerTask):
         '''
         pick the container from our GCR repository
         '''
-        return ':'.join(["eu.gcr.io/open-targets/data_pipeline", self.mrtarget_branch])
+        return ':'.join(["quay.io/cttv/data_pipeline", self.mrtarget_branch])
 
 
     @property
@@ -182,7 +182,7 @@ class AllPipeline(luigi.WrapperTask):
         yield AssociationObjectCreation(self.date)
 
 def main():
-    luigi.run(["GeneData"])
+    luigi.run(["DryRun"])
 
 if __name__ == '__main__':
     main()
