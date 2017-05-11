@@ -35,7 +35,7 @@ class MrTargetTask(DockerTask):
                                                   'eshost', '127.0.0.1')
     esport = luigi.configuration.get_config().get('elasticsearch',
                                                   'esport', '9200')
-    esport = luigi.configuration.get_config().get('elasticsearch',
+    esauth = luigi.configuration.get_config().get('elasticsearch',
                                                   'esauth', None)
     # read from the config file how to call the marker index, where
     # to store the status of each task.
