@@ -2,10 +2,9 @@ import logging
 import datetime
 import os
 import luigi
+import uuid
 from luigi.contrib.docker_runner import DockerTask
 from luigi.contrib.esindex import ElasticsearchTarget
-import uuid
-
 logger = logging.getLogger('luigi-interface')
 
 
@@ -18,9 +17,9 @@ class MrTargetTask(DockerTask):
         - relies on the local /tmp folder to store data for each docker run
     '''
     run_options = luigi.Parameter(default='-h')
-    mrtarget_branch = luigi.Parameter(default='master')
+    mrtargetbranch = luigi.Parameter(default='master')
     date = luigi.DateParameter(default=datetime.date.today())
-
+    data_version = luigi.Parameter(default=datetime.date.today().strftime("hannibal-%y.%m.%d"))
 
     '''As we are running multiple workers, the output must be a resource that is
        accessible by all workers, such as S3/distributedFileSys or database'''
@@ -37,6 +36,7 @@ class MrTargetTask(DockerTask):
                                                   'esport', '9200')
     esauth = luigi.configuration.get_config().get('elasticsearch',
                                                   'esauth', None)
+    
     # read from the config file how to call the marker index, where
     # to store the status of each task.
     marker_index = luigi.configuration.get_config().get('elasticsearch',
@@ -44,24 +44,39 @@ class MrTargetTask(DockerTask):
     marker_doc_type = luigi.configuration.get_config().get('elasticsearch',
                                                            'marker-doc-type', 'entry')
 
-    volumes = [os.getcwd() + '/data:/tmp/data']
     network_mode = 'host'
     auto_remove = False
+    force_pull = True
 
+    @property
+    def volumes(self):
+        logfile = os.getcwd() + '/logs/root_log' + self.run_options[0].strip() + '.out'
+        datadir = os.getcwd() + '/data'
+        
+        if not os.path.exists(datadir):
+            os.makedirs(datadir)
+
+        with open(logfile, 'a'):
+            os.utime(logfile)
+
+        return [datadir + ':/tmp/data', logfile + ':/usr/src/app/root_log.out']
+    
     @property
     def environment(self):
         ''' pass the environment variables required by the container
         '''
         return {
-            "ELASTICSEARCH_HOST": self.eshost,
-            "ELASTICSEARCH_PORT": self.esport,
+            "ELASTICSEARCH_NODES": "https://" + \
+				  self.esauth + "@" + \
+				  self.eshost + ":" + \
+				  self.esport,
             "CTTV_DUMP_FOLDER":"/tmp/data",
-            "CTTV_DATA_VERSION": self.date.strftime('%y.%m.wk%W')
-            }
+            "CTTV_DATA_VERSION": self.data_version
+           }
 
     @property
     def name(self):
-        return '-'.join(['mrT', self.mrtarget_branch, 
+        return '-'.join(['mrT', self.mrtargetbranch, 
                          self.run_options[0].lstrip('-'),
                          str(uuid.uuid4().hex[:8])])
 
@@ -70,7 +85,7 @@ class MrTargetTask(DockerTask):
         '''
         pick the container from our GCR repository
         '''
-        return ':'.join(["quay.io/cttv/data_pipeline", self.mrtarget_branch])
+        return ':'.join(["quay.io/cttv/data_pipeline", self.mrtargetbranch])
 
 
     @property
@@ -87,7 +102,8 @@ class MrTargetTask(DockerTask):
             http_auth=self.esauth,
             index=self.marker_index,
             doc_type=self.marker_doc_type,
-            update_id=self.task_id
+            update_id=self.task_id,
+	    extra_elasticsearch_args={'use_ssl':True,'verify_certs':True}
             )
 
 
@@ -118,7 +134,6 @@ class Reactome(MrTargetTask):
 
 class GeneData(MrTargetTask):
     run_options = ['--gen']
-
     def requires(self):
         return UniProt(), Ensembl(), Expression(), Reactome()
 
