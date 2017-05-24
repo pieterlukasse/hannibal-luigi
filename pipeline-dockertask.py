@@ -20,7 +20,7 @@ class MrTargetTask(DockerTask):
     run_options = luigi.Parameter(default='-h')
     mrtargetbranch = luigi.Parameter(default='master')
     # date = luigi.DateParameter(default=datetime.date.today())
-    data_version = luigi.Parameter(default=datetime.date.today().strftime("hannibal-%y.%m.%d"))
+    data_version = luigi.Parameter(default=datetime.date.today().strftime("hannibal-%y.%m"))
 
     '''As we are running multiple workers, the output must be a resource that is
        accessible by all workers, such as S3/distributedFileSys or database'''
@@ -46,6 +46,7 @@ class MrTargetTask(DockerTask):
                                                            'marker-doc-type', 'entry')
 
     network_mode = 'host'
+    # TODO: make this true after all the testing
     auto_remove = False
     force_pull = True
 
@@ -147,16 +148,18 @@ class ECO(MrTargetTask):
 class Validate(MrTargetTask):
     '''
     Run the validation step, which takes the JSON submitted by each provider
-    and makes sure they adhere to our JSON schema
+    and makes sure they adhere to our JSON schema.
+    Expects a list such as ['--remote-file','urlA','--remote-file','urlB'...]
     '''
-    url = luigi.Parameter()
+    urls = luigi.Parameter()
 
     def requires(self):
         return GeneData(), Reactome(), EFO(), ECO()
 
     @property
     def command(self):
-        return ' '.join(['mrtarget', '--val', '--remote-file', self.url])
+        return ' '.join(['mrtarget','--val', self.urls])
+
 
 
 class EvidenceObjects(MrTargetTask):
@@ -165,12 +168,16 @@ class EvidenceObjects(MrTargetTask):
     Specify here the list of evidence
     Recreate evidence objects (JSON representations of each validated piece of evidence) and store them in the backend. 
     '''
-    t2d_evidence_sources = json.loads(luigi.configuration.get_config().get('evidences',
+    uris = json.loads(luigi.configuration.get_config().get('evidences',
                                                            't2d_evidence_sources', '[]'))
+    evi_urls = []
+    # hack to paste all the uris one after the other in the run_options of the
+    # validation step
+    for u in uris:
+        evi_urls.extend(['--remote-file', u])
 
     def requires(self):
-        for evurl in self.t2d_evidence_sources:
-            yield Validate(url=evurl)
+        return Validate(urls=' '.join(self.evi_urls))
 
     run_options = ['--evs']
 
