@@ -220,8 +220,9 @@ class DataDump(MrTargetTask):
     '''when the API is deployed we can create the API dumps'''
     def requires(self):
         return DataRelease()
-    
-    run_options = ['--dumps']
+
+    run_options = ['--dump']
+
 
 def main():
     luigi.run(["DryRun"])
