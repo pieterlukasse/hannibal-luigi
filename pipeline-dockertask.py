@@ -2,6 +2,7 @@ import logging
 import datetime
 import os
 import luigi
+import json
 import uuid
 from luigi.contrib.docker_runner import DockerTask
 from luigi.contrib.esindex import ElasticsearchTarget
@@ -18,7 +19,7 @@ class MrTargetTask(DockerTask):
     '''
     run_options = luigi.Parameter(default='-h')
     mrtargetbranch = luigi.Parameter(default='master')
-    date = luigi.DateParameter(default=datetime.date.today())
+    # date = luigi.DateParameter(default=datetime.date.today())
     data_version = luigi.Parameter(default=datetime.date.today().strftime("hannibal-%y.%m.%d"))
 
     '''As we are running multiple workers, the output must be a resource that is
@@ -153,48 +154,74 @@ class Validate(MrTargetTask):
     def requires(self):
         return GeneData(), Reactome(), EFO(), ECO()
 
-    run_options = ['--val', '--remote-file', url]
+    @property
+    def command(self):
+        return ' '.join(['mrtarget', '--val', '--remote-file', self.url])
 
 
-class ValidateAll(luigi.WrapperTask):
+class EvidenceObjects(MrTargetTask):
     ''' 
     Dummy task that triggers execution of all validate tasks
     Specify here the list of evidence
-    '''
-    t2d_evidence_sources = [
-        'https://storage.googleapis.com/otar001-core/cttv001_gene2phenotype-15-02-2017.json.gz',
-        'https://storage.googleapis.com/otar001-core/cttv001_intogen-15-02-2017.json.gz',
-        'https://storage.googleapis.com/otar001-core/cttv001_phenodigm-15-02-2017.json.gz',
-        'https://storage.googleapis.com/otar006-reactome/cttv006-21-02-2017.json.gz',
-        'https://storage.googleapis.com/otar007-cosmic/cttv007-17-02-2017.json.gz',
-    ]
-
-    def requires(self):
-        for url in t2d_evidence_sources:
-            yield Validate(url=url)
-
-
-
-
-class EvidenceObjectCreation(MrTargetTask):
-    """
     Recreate evidence objects (JSON representations of each validated piece of evidence) and store them in the backend. 
-    TODO: run.py scope can be limited to a few objects. describe how and implement
-    """
-    command = ['python', 'run.py', '--evi']
+    '''
+    t2d_evidence_sources = json.loads(luigi.configuration.get_config().get('evidences',
+                                                           't2d_evidence_sources', '[]'))
 
-
-class AssociationObjectCreation(MrTargetTask):
-    pass
-
-
-class AllPipeline(luigi.WrapperTask):
-    date = luigi.DateParameter(default=datetime.date.today())
     def requires(self):
-        yield LoadBaseData(self.date)
-        yield Validate(self.date)
-        yield EvidenceObjectCreation(self.date)
-        yield AssociationObjectCreation(self.date)
+        for evurl in self.t2d_evidence_sources:
+            yield Validate(url=evurl)
+
+    run_options = ['--evs']
+
+
+class InjectedEvidence(MrTargetTask):
+    '''not required by the association step, but required by the release
+    '''
+    def requires(self):
+        return EvidenceObjects()
+
+    run_options = ['--evs', '--inject_literature']
+
+
+class AssociationObjects(MrTargetTask):
+    '''the famous ass method'''
+    def requires(self):
+        return EvidenceObjects()
+
+    run_options = ['--ass']
+
+
+class SearchObjects(MrTargetTask):
+    
+    def requires(self):
+        return AssociationObjects(), GeneData(), EFO()
+
+    run_options = ['--sea']
+
+
+class Relations(MrTargetTask):
+
+    def requires(self):
+        return AssociationObjects()
+
+    run_options = ['--ddr']
+
+
+class DataRelease(luigi.WrapperTask):
+    def requires(self):
+        yield SearchObjects()
+        yield EvidenceObjects()
+        yield AssociationObjects()
+        yield Relations()
+
+
+class DataDump(MrTargetTask):
+    '''when the API is deployed we can create the API dumps'''
+    def requires(self):
+        return DataRelease()
+    
+    run_options = ['--dumps']
 
 def main():
     luigi.run(["DryRun"])
