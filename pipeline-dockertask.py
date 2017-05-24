@@ -211,7 +211,7 @@ class Relations(MrTargetTask):
 class DataRelease(luigi.WrapperTask):
     def requires(self):
         yield SearchObjects()
-        yield EvidenceObjects()
+        yield InjectedEvidence()
         yield AssociationObjects()
         yield Relations()
 
