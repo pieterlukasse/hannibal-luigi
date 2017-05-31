@@ -47,12 +47,12 @@ class MrTargetTask(DockerTask):
 
     network_mode = 'host'
     # TODO: make this true after all the testing
-    auto_remove = False
+    auto_remove = True
     force_pull = True
 
     @property
     def volumes(self):
-        logfile = os.getcwd() + '/logs/root_log' + self.run_options[0].strip() + '.out'
+        logfile = os.getcwd() + '/logs/mrtarget_log' + self.run_options[0].strip() + '.out'
         datadir = os.getcwd() + '/data'
         
         if not os.path.exists(datadir):
@@ -61,15 +61,14 @@ class MrTargetTask(DockerTask):
         with open(logfile, 'a'):
             os.utime(logfile)
 
-        return [datadir + ':/tmp/data', logfile + ':/usr/src/app/root_log.out']
+        return [datadir + ':/tmp/data', logfile + ':/usr/src/app/mrtarget_log.out']
     
     @property
     def environment(self):
         ''' pass the environment variables required by the container
         '''
         return {
-            "ELASTICSEARCH_NODES": "https://" + \
-				  self.esauth + "@" + \
+            "ELASTICSEARCH_NODES": "http://" + \
 				  self.eshost + ":" + \
 				  self.esport,
             "CTTV_DUMP_FOLDER":"/tmp/data",
@@ -87,7 +86,7 @@ class MrTargetTask(DockerTask):
         '''
         pick the container from our GCR repository
         '''
-        return ':'.join(["quay.io/cttv/data_pipeline", self.mrtargetbranch])
+        return ':'.join(["quay.io/opentargets/mrtarget", self.mrtargetbranch])
 
 
     @property
@@ -101,11 +100,11 @@ class MrTargetTask(DockerTask):
         return ElasticsearchTarget(
             host=self.eshost,
             port=self.esport,
-            http_auth=self.esauth,
+            #http_auth=self.esauth,
             index=self.marker_index,
             doc_type=self.marker_doc_type,
-            update_id=self.task_id,
-	    extra_elasticsearch_args={'use_ssl':True,'verify_certs':True}
+            update_id=self.task_id
+	    #extra_elasticsearch_args={'use_ssl':True,'verify_certs':True}
             )
 
 
