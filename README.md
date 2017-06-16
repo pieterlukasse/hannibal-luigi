@@ -26,6 +26,10 @@ $ PYTHONPATH=. luigi --local-scheduler --module data_pipeline validation \
     validation --LoadValidationTask-csv-file another.csv
 ```
 
+**note**
+For any meaningful use of hannibal-luigi, you should replace `luigi.cfg` with your own version. 
+ES authentication should live on a private repo or somewhere not in version control.
+
 On a server (with port 8082 open):
 ```
 luigid --logdir /mnt/hannibal-tmp/log
