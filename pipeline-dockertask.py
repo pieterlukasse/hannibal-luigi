@@ -2,6 +2,7 @@ import logging
 import datetime
 import os
 import luigi
+import json
 import uuid
 from luigi.contrib.docker_runner import DockerTask
 from luigi.contrib.esindex import ElasticsearchTarget
@@ -20,7 +21,7 @@ class MrTargetTask(DockerTask):
     mrtargetbranch = luigi.Parameter(default='master')
     mrtargetrepo = luigi.Parameter(default="quay.io/cttv/data_pipeline")
     date = luigi.DateParameter(default=datetime.date.today())
-    data_version = luigi.Parameter(default=datetime.date.today().strftime("hannibal-%y.%m.%d"))
+    data_version = luigi.Parameter(default=datetime.date.today().strftime("hannibal-%y.%m"))
 
     '''As we are running multiple workers, the output must be a resource that is
        accessible by all workers, such as S3/distributedFileSys or database'''
@@ -46,12 +47,13 @@ class MrTargetTask(DockerTask):
                                                            'marker-doc-type', 'entry')
 
     network_mode = 'host'
-    auto_remove = False
+    # TODO: make this true after all the testing
+    auto_remove = True
     force_pull = True
 
     @property
     def volumes(self):
-        logfile = os.getcwd() + '/logs/root_log' + self.run_options[0].strip() + '.out'
+        logfile = os.getcwd() + '/logs/mrtarget_log' + self.run_options[0].strip() + '.out'
         datadir = os.getcwd() + '/data'
         
         if not os.path.exists(datadir):
@@ -60,15 +62,14 @@ class MrTargetTask(DockerTask):
         with open(logfile, 'a'):
             os.utime(logfile)
 
-        return [datadir + ':/tmp/data', logfile + ':/usr/src/app/root_log.out']
+        return [datadir + ':/tmp/data', logfile + ':/usr/src/app/mrtarget_log.out']
     
     @property
     def environment(self):
         ''' pass the environment variables required by the container
         '''
         return {
-            "ELASTICSEARCH_NODES": "https://" + \
-				  self.esauth + "@" + \
+            "ELASTICSEARCH_NODES": "http://" + \
 				  self.eshost + ":" + \
 				  self.esport,
             "CTTV_DUMP_FOLDER":"/tmp/data",
@@ -100,11 +101,11 @@ class MrTargetTask(DockerTask):
         return ElasticsearchTarget(
             host=self.eshost,
             port=self.esport,
-            http_auth=self.esauth,
+            #http_auth=self.esauth,
             index=self.marker_index,
             doc_type=self.marker_doc_type,
-            update_id=self.task_id,
-	    extra_elasticsearch_args={'use_ssl':True,'verify_certs':True}
+            update_id=self.task_id
+	    #extra_elasticsearch_args={'use_ssl':True,'verify_certs':True}
             )
 
 
@@ -147,55 +148,88 @@ class ECO(MrTargetTask):
 class Validate(MrTargetTask):
     '''
     Run the validation step, which takes the JSON submitted by each provider
-    and makes sure they adhere to our JSON schema
+    and makes sure they adhere to our JSON schema.
+    Expects a list such as ['--remote-file','urlA','--remote-file','urlB'...]
     '''
-    url = luigi.Parameter()
+    urls = luigi.Parameter()
 
     def requires(self):
         return GeneData(), Reactome(), EFO(), ECO()
 
-    run_options = ['--val', '--remote-file', url]
+    @property
+    def command(self):
+        return ' '.join(['mrtarget','--val', self.urls])
 
 
-class ValidateAll(luigi.WrapperTask):
+
+class EvidenceObjects(MrTargetTask):
     ''' 
     Dummy task that triggers execution of all validate tasks
     Specify here the list of evidence
-    '''
-    t2d_evidence_sources = [
-        'https://storage.googleapis.com/otar001-core/cttv001_gene2phenotype-15-02-2017.json.gz',
-        'https://storage.googleapis.com/otar001-core/cttv001_intogen-15-02-2017.json.gz',
-        'https://storage.googleapis.com/otar001-core/cttv001_phenodigm-15-02-2017.json.gz',
-        'https://storage.googleapis.com/otar006-reactome/cttv006-21-02-2017.json.gz',
-        'https://storage.googleapis.com/otar007-cosmic/cttv007-17-02-2017.json.gz',
-    ]
-
-    def requires(self):
-        for url in t2d_evidence_sources:
-            yield Validate(url=url)
-
-
-
-
-class EvidenceObjectCreation(MrTargetTask):
-    """
     Recreate evidence objects (JSON representations of each validated piece of evidence) and store them in the backend. 
-    TODO: run.py scope can be limited to a few objects. describe how and implement
-    """
-    command = ['python', 'run.py', '--evi']
+    '''
+    uris = json.loads(luigi.configuration.get_config().get('evidences',
+                                                           't2d_evidence_sources', '[]'))
+    evi_urls = []
+    # hack to paste all the uris one after the other in the run_options of the
+    # validation step
+    for u in uris:
+        evi_urls.extend(['--remote-file', u])
 
-
-class AssociationObjectCreation(MrTargetTask):
-    pass
-
-
-class AllPipeline(luigi.WrapperTask):
-    date = luigi.DateParameter(default=datetime.date.today())
     def requires(self):
-        yield LoadBaseData(self.date)
-        yield Validate(self.date)
-        yield EvidenceObjectCreation(self.date)
-        yield AssociationObjectCreation(self.date)
+        return Validate(urls=' '.join(self.evi_urls))
+
+    run_options = ['--evs']
+
+
+class InjectedEvidence(MrTargetTask):
+    '''not required by the association step, but required by the release
+    '''
+    def requires(self):
+        return EvidenceObjects()
+
+    run_options = ['--evs', '--inject_literature']
+
+
+class AssociationObjects(MrTargetTask):
+    '''the famous ass method'''
+    def requires(self):
+        return EvidenceObjects()
+
+    run_options = ['--ass']
+
+
+class SearchObjects(MrTargetTask):
+    
+    def requires(self):
+        return AssociationObjects(), GeneData(), EFO()
+
+    run_options = ['--sea']
+
+
+class Relations(MrTargetTask):
+
+    def requires(self):
+        return AssociationObjects()
+
+    run_options = ['--ddr']
+
+
+class DataRelease(luigi.WrapperTask):
+    def requires(self):
+        yield SearchObjects()
+        yield InjectedEvidence()
+        yield AssociationObjects()
+        yield Relations()
+
+
+class DataDump(MrTargetTask):
+    '''when the API is deployed we can create the API dumps'''
+    def requires(self):
+        return DataRelease()
+
+    run_options = ['--dump']
+
 
 def main():
     luigi.run(["DryRun"])
