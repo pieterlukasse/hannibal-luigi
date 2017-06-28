@@ -18,6 +18,7 @@ class MrTargetTask(DockerTask):
     '''
     run_options = luigi.Parameter(default='-h')
     mrtargetbranch = luigi.Parameter(default='master')
+    mrtargetrepo = luigi.Parameter(default="quay.io/cttv/data_pipeline")
     date = luigi.DateParameter(default=datetime.date.today())
     data_version = luigi.Parameter(default=datetime.date.today().strftime("hannibal-%y.%m.%d"))
 
@@ -85,7 +86,7 @@ class MrTargetTask(DockerTask):
         '''
         pick the container from our GCR repository
         '''
-        return ':'.join(["quay.io/cttv/data_pipeline", self.mrtargetbranch])
+        return ':'.join([self.mrtargetrepo, self.mrtargetbranch])
 
 
     @property
