@@ -53,7 +53,7 @@ class MrTargetTask(DockerTask):
 
     @property
     def volumes(self):
-        logfile = '/hannibal/logs/mrtarget_log' + self.run_options[0].strip() + '.out'
+        logfile = '/hannibal/logs/mrtarget_' + self.run_options[0].strip() + '.log'
         datadir = '/hannibal/data'
         
         if not os.path.exists(datadir):
@@ -61,8 +61,8 @@ class MrTargetTask(DockerTask):
 
         with open(logfile, 'a'):
             os.utime(logfile)
-
-        return [datadir + ':/tmp/data', logfile + ':/usr/src/app/mrtarget_log.out']
+    
+        return [datadir + ':/tmp/data', logfile + ':/usr/src/app/output.log']
     
     @property
     def environment(self):
