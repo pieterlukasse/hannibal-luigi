@@ -19,7 +19,7 @@ class MrTargetTask(DockerTask):
     '''
     run_options = luigi.Parameter(default='-h')
     mrtargetbranch = luigi.Parameter(default='master')
-    mrtargetrepo = luigi.Parameter(default="quay.io/cttv/data_pipeline")
+    mrtargetrepo = luigi.Parameter(default="quay.io/cttv/data_pipeline", significant=False)
     date = luigi.DateParameter(default=datetime.date.today())
     data_version = luigi.Parameter(default=datetime.date.today().strftime("hannibal-%y.%m"))
 
