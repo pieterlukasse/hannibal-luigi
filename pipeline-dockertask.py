@@ -53,7 +53,7 @@ class MrTargetTask(DockerTask):
 
     @property
     def volumes(self):
-        logfile = '/hannibal/logs/mrtarget_' + self.run_options[0].strip() + '.log'
+        logfile = '/hannibal/logs/mrtarget_' + self.run_options[0].strip('-') + '.log'
         datadir = '/hannibal/data'
         
         if not os.path.exists(datadir):
