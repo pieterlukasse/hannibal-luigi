@@ -50,11 +50,12 @@ class MrTargetTask(DockerTask):
     # TODO: make this true after all the testing
     auto_remove = True
     force_pull = True
+    mount_tmp
 
     @property
     def volumes(self):
         logfile = '/hannibal/logs/mrtarget_' + self.run_options[0].strip('-') + '.log'
-        datadir = '/hannibal/data'
+        #datadir = '/hannibal/data'
         
         if not os.path.exists(datadir):
             os.makedirs(datadir)
@@ -62,7 +63,7 @@ class MrTargetTask(DockerTask):
         with open(logfile, 'a'):
             os.utime(logfile)
     
-        return [datadir + ':/tmp/data', logfile + ':/usr/src/app/output.log']
+        return [logfile + ':/usr/src/app/output.log']
     
     @property
     def environment(self):
