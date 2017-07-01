@@ -151,7 +151,7 @@ class Validate(MrTargetTask):
     '''
     Run the validation step, which takes the JSON submitted by each provider
     and makes sure they adhere to our JSON schema.
-    Expects a list such as ['--remote-file','urlA','--remote-file','urlB'...]
+    Expects a list such as ['--input-file','urlA','urlB'...]
     '''
     urls = luigi.Parameter()
 
@@ -160,7 +160,7 @@ class Validate(MrTargetTask):
 
     @property
     def command(self):
-        return ' '.join(['mrtarget','--val', self.urls])
+        return ' '.join(['mrtarget','--val', '--input-file', self.urls])
 
 
 
@@ -172,14 +172,9 @@ class EvidenceObjects(MrTargetTask):
     '''
     uris = json.loads(luigi.configuration.get_config().get('evidences',
                                                            't2d_evidence_sources', '[]'))
-    evi_urls = []
-    # hack to paste all the uris one after the other in the run_options of the
-    # validation step
-    for u in uris:
-        evi_urls.extend(['--remote-file', u])
 
     def requires(self):
-        return Validate(urls=' '.join(self.evi_urls))
+        return Validate(urls=','.join(self.uris))
 
     run_options = ['--evs']
 
@@ -198,7 +193,7 @@ class AssociationObjects(MrTargetTask):
     def requires(self):
         return EvidenceObjects()
 
-    run_options = ['--ass']
+    run_options = ['--as']
 
 
 class SearchObjects(MrTargetTask):
