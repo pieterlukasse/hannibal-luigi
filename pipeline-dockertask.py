@@ -50,7 +50,7 @@ class MrTargetTask(DockerTask):
     # TODO: make this true after all the testing
     auto_remove = True
     force_pull = True
-    mount_tmp = False
+    mount_tmp = True
 
     @property
     def volumes(self):
