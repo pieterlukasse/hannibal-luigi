@@ -74,8 +74,8 @@ class MrTargetTask(DockerTask):
 				  self.eshost + ":" + \
 				  self.esport,
             "CTTV_DUMP_FOLDER":"/tmp/data",
-            "CTTV_DATA_VERSION": self.data_version,
-            "CTTV_MINIMAL": 'true'
+            "CTTV_DATA_VERSION": self.data_version
+            
            }
 
     @property
