@@ -53,7 +53,7 @@ class MrTargetTask(DockerTask):
     mount_tmp = False
 
     @property
-    def volumes(self):
+    def binds(self):
         logfile = '/hannibal/logs/mrtarget_' + self.run_options[0].strip('-') + '.log'
         # datadir = '/hannibal/data'
         
