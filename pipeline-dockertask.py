@@ -154,6 +154,7 @@ class Validate(MrTargetTask):
     Expects a list such as ['--input-file','urlA','urlB'...]
     '''
     urls = luigi.Parameter()
+    run_options = ['--val']
 
     def requires(self):
         return GeneData(), Reactome(), EFO(), ECO()
