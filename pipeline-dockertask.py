@@ -20,7 +20,7 @@ class MrTargetTask(DockerTask):
     run_options = luigi.Parameter(default='-h')
     mrtargetbranch = luigi.Parameter(default='master')
     mrtargetrepo = luigi.Parameter(default="quay.io/cttv/data_pipeline", significant=False)
-    date = luigi.DateParameter(default=datetime.date.today())
+    date = luigi.DateParameter(default=datetime.date.today(),significant=False)
     data_version = luigi.Parameter(default=datetime.date.today().strftime("hannibal-%y.%m"))
 
     '''As we are running multiple workers, the output must be a resource that is
@@ -151,7 +151,7 @@ class Validate(MrTargetTask):
     '''
     Run the validation step, which takes the JSON submitted by each provider
     and makes sure they adhere to our JSON schema.
-    Expects a list such as ['--input-file','urlA','urlB'...]
+    Expects a list such as ['urlA','urlB'...]
     '''
     urls = luigi.Parameter()
     run_options = ['--val']
