@@ -54,8 +54,8 @@ class MrTargetTask(DockerTask):
 
     @property
     def binds(self):
-        logfile = '/hannibal/logs/mrtarget_' + self.run_options[0].strip('-') + '.log'
-        # datadir = '/hannibal/data'
+        logfile = '~/hannibal/logs/mrtarget_' + self.run_options[0].strip('-') + '.log'
+        # datadir = '~/hannibal/data'
         
         # if not os.path.exists(datadir):
         #     os.makedirs(datadir)
@@ -161,15 +161,16 @@ class Validate(MrTargetTask):
 
     @property
     def command(self):
-        return ' '.join(['mrtarget','--val', '--input-file', self.urls])
+        return ' '.join(['mrtarget', '--val', '--input-file', self.urls])
 
 
 
 class EvidenceObjects(MrTargetTask):
-    ''' 
+    '''
     Dummy task that triggers execution of all validate tasks
     Specify here the list of evidence
-    Recreate evidence objects (JSON representations of each validated piece of evidence) and store them in the backend. 
+    Recreate evidence objects (JSON representations of each validated piece of evidence)
+    and store them in the backend.
     '''
     uris = json.loads(luigi.configuration.get_config().get('evidences',
                                                            't2d_evidence_sources', '[]'))
