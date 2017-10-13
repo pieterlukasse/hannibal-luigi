@@ -53,6 +53,10 @@ class MrTargetTask(DockerTask):
     mount_tmp = False
 
     @property
+    def container_options(self):
+        return {'networking_config':self._client.create_networking_config({'esnet': self._client.create_endpoint_config()})}
+
+    @property
     def binds(self):
         logfile = '/hannibal/logs/mrtarget_' + self.run_options[0].strip('-') + '.log'
         # datadir = '/hannibal/data'
