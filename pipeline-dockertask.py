@@ -47,7 +47,6 @@ class MrTargetTask(DockerTask):
     marker_doc_type = luigi.configuration.get_config().get('elasticsearch',
                                                            'marker-doc-type', 'entry')
 
-    container_options = {'networking_config':self._client.create_networking_config({'esnet': self._client.create_endpoint_config()})}
     auto_remove = True
     force_pull = False
     mount_tmp = False
