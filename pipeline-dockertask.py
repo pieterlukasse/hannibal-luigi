@@ -47,9 +47,8 @@ class MrTargetTask(DockerTask):
                                                            'marker-doc-type', 'entry')
 
     network_mode = 'bridge'
-    # TODO: make this true after all the testing
     auto_remove = True
-    force_pull = True
+    force_pull = False
     mount_tmp = False
 
     @property
@@ -63,7 +62,7 @@ class MrTargetTask(DockerTask):
         with open(os.path.expanduser(logfile), 'a'):
             os.utime(os.path.expanduser(logfile), None)
     
-        return [logfile + ':/usr/src/app/output.log']
+        return [os.path.expanduser(logfile) + ':/usr/src/app/output.log']
     
     @property
     def environment(self):
