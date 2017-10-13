@@ -53,8 +53,8 @@ class MrTargetTask(DockerTask):
 
     @property
     def binds(self):
-        logfile = '~/hannibal/logs/mrtarget_' + self.run_options[0].strip('-') + '.log'
-        # datadir = '~/hannibal/data'
+        logfile = '/hannibal/logs/mrtarget_' + self.run_options[0].strip('-') + '.log'
+        # datadir = '/hannibal/data'
         
         # if not os.path.exists(datadir):
         #     os.makedirs(datadir)

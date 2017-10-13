@@ -166,13 +166,13 @@ wget -O ~/.tmux.conf https://git.io/v9FuI
 pip install --upgrade pip
 pip install elasticsearch-curator
 
-mkdir ~/hannibal
-mkdir ~/hannibal/logs
-mkdir ~/hannibal/data
+mkdir /hannibal
+mkdir /hannibal/logs
+mkdir /hannibal/data
 
 ## clone the hannibal repo with the task definition and install python packages needed
-git clone https://github.com/opentargets/hannibal.git ~/hannibal/src
-pip install -r ~/hannibal/src/requirements.txt
+git clone https://github.com/opentargets/hannibal.git /hannibal/src
+pip install -r /hannibal/src/requirements.txt
 
 
 cat <<EOF > ~/luigi.cfg
@@ -269,7 +269,7 @@ gcloud docker -- pull eu.gcr.io/open-targets/mrtarget:${CONTAINER_TAG}
 luigid --background
 
 ## start luigi run
-cd ~/hannibal/src
+cd /hannibal/src
 PYTHONPATH="." luigi --module pipeline-dockertask DataRelease --workers 1
 
 # tmux new -d -s luigi
