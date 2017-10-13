@@ -9,7 +9,6 @@ from luigi.contrib.esindex import ElasticsearchTarget
 logger = logging.getLogger('luigi-interface')
 from docker import APIClient
 
-docker_client = APIClient()
 
 class MrTargetTask(DockerTask):
     '''
@@ -48,7 +47,7 @@ class MrTargetTask(DockerTask):
     marker_doc_type = luigi.configuration.get_config().get('elasticsearch',
                                                            'marker-doc-type', 'entry')
 
-    container_options = {'networking_config':docker_client.create_networking_config({'esnet': docker_client.create_endpoint_config()})}
+    container_options = {'networking_config':self._client.create_networking_config({'esnet': self._client.create_endpoint_config()})}
     auto_remove = True
     force_pull = False
     mount_tmp = False
