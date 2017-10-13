@@ -135,10 +135,13 @@ class Expression(MrTargetTask):
 class Reactome(MrTargetTask):
     run_options = ['--rea']
 
+class MousePheno(MrTargetTask):
+    run_options = ['--mp']
+
 class GeneData(MrTargetTask):
     run_options = ['--gen']
     def requires(self):
-        return UniProt(), Ensembl(), Expression(), Reactome()
+        return UniProt(), Ensembl(), Expression(), Reactome(), MousePheno()
 
 class EFO(MrTargetTask):
     run_options = ['--efo']
