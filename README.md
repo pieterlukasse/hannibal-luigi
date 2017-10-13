@@ -16,6 +16,14 @@ Authenticate to google cloud (see the [quickstart guides](https://cloud.google.c
 
 The DAG that connects the pipeline steps is defined in `pipeline-dockertask.py`
 
+You can monitor the scheduler status by forwarding port 8082, for eg:
+```sh
+gcloud compute ssh --ssh-flag="-L 8082:localhost:8082"  --project=open-targets-eu-dev hannibal-master-1013-1112 --zone=europe-west1-d
+```
+and then browse to: http://localhost:8082/static/visualiser/index.html
+
+
+
 To debug whether the init script has worked, log in:
 ```sh
 gcloud compute ssh <theinstancename>

@@ -34,18 +34,60 @@ apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y docker-ce
 
 systemctl enable docker
 
+cat <<EOF >> ~/.bashrc
+# Sensible Bash - An attempt at saner Bash defaults
+# Repository: https://github.com/mrzool/bash-sensible
+
+## GENERAL OPTIONS ##
+set -o noclobber
+shopt -s checkwinsize
+PROMPT_DIRTRIM=2
+bind Space:magic-space
+shopt -s globstar 2> /dev/null
+shopt -s nocaseglob;
+
+## SMARTER TAB-COMPLETION (Readline bindings) ##
+bind "set completion-ignore-case on"
+bind "set completion-map-case on"
+bind "set show-all-if-ambiguous on"
+bind "set mark-symlinked-directories on"
+
+## SANE HISTORY DEFAULTS ##
+shopt -s histappend
+shopt -s cmdhist
+PROMPT_COMMAND='history -a'
+HISTSIZE=500000
+HISTFILESIZE=100000
+HISTCONTROL="erasedups:ignoreboth"
+export HISTIGNORE="&:[ ]*:exit:ls:bg:fg:history:clear"
+HISTTIMEFORMAT='%F %T '
+# Enable incremental history search with up/down arrows (also Readline goodness)
+bind '"\e[A": history-search-backward'
+bind '"\e[B": history-search-forward'
+bind '"\e[C": forward-char'
+bind '"\e[D": backward-char'
+
+## BETTER DIRECTORY NAVIGATION ##
+shopt -s autocd 2> /dev/null
+shopt -s dirspell 2> /dev/null
+shopt -s cdspell 2> /dev/null
+CDPATH="."
+
+### Variables I need for ES and Luigi ###
 ## Compute half memtotal gigs 
 # cap ES heap at 26 to safely remain under zero-base compressed oops limit
 # see: https://www.elastic.co/guide/en/elasticsearch/reference/current/heap-size.html
-ES_MEM=$(awk '/MemTotal/ {half=$2/1024/2; if (half > 52*1024) printf 52*1024; else printf "%d", half}' /proc/meminfo)
-ES_HEAP=$(($ES_MEM/2))
+ES_MEM=\$(awk '/MemTotal/ {half=\$2/1024/2; if (half > 52*1024) printf 52*1024; else printf "%d", half}' /proc/meminfo)
+ES_HEAP=\$((\$ES_MEM/2))
 
 ## Cap CPUs for ES to 8
-ES_CPU=$(awk '/cpu cores/ {if ($NF/2 < 8) print $NF/2; else print 8}' /proc/cpuinfo)
+ES_CPU=\$(awk '/cpu cores/ {if (\$NF/2 < 8) print \$NF/2; else print 8}' /proc/cpuinfo)
 
-INSTANCE_NAME=$(http --ignore-stdin --check-status 'http://metadata.google.internal/computeMetadata/v1/instance/name'  "Metadata-Flavor:Google" -p b --pretty none)
-CONTAINER_TAG=$(http --ignore-stdin --check-status 'http://metadata.google.internal/computeMetadata/v1/instance/attributes/container-tag'  "Metadata-Flavor:Google" -p b --pretty none)
+INSTANCE_NAME=\$(http --ignore-stdin --check-status 'http://metadata.google.internal/computeMetadata/v1/instance/name'  "Metadata-Flavor:Google" -p b --pretty none)
+CONTAINER_TAG=\$(http --ignore-stdin --check-status 'http://metadata.google.internal/computeMetadata/v1/instance/attributes/container-tag'  "Metadata-Flavor:Google" -p b --pretty none)
 
+LUIGI_CONFIG_PATH=~/luigi.cfg
+EOF
 
 ## install stackdriver logging agent 
 # as explained in https://cloud.google.com/logging/docs/agent/installation
@@ -59,18 +101,20 @@ docker run -d -p 9200:9200 -p 9300:9300 \
     --name elasticsearch \
     -v esdatavol:/usr/share/elasticsearch/data \
     -e "discovery.type=single-node" \
-    -e "xpack.security.enabled=false"
+    -e "xpack.security.enabled=false" \
     -e "cluster.name=hannibal" \
     -e "bootstrap.memory_lock=true" \
     -e "ES_JAVA_OPTS=-Xms${ES_HEAP}m -Xmx${ES_HEAP}m" \
     -e "reindex.remote.whitelist=10.*.*.*:*, _local_:*" \
     --log-driver=gcplogs \
+    --log-opt gcp-log-cmd=true \
     --cpus=${ES_CPU} \
     -m ${ES_MEM}M \
-    --memory-swap ${ES_MEM}M \        
     --ulimit memlock=-1:-1 \
     --restart=always \
     docker.elastic.co/elasticsearch/elasticsearch:5.6.2
+
+
 
 # # NOTE: we don't have to explicity set the ulimits over files, since
 # the debian docker daemon sets acceptable ones 
@@ -78,11 +122,15 @@ docker run -d -p 9200:9200 -p 9300:9300 \
 
 
 
-## Change index settings
+## Change index settings (after ES is ready)
+
+until $(curl --output /dev/null --silent --head --fail http://127.0.0.1:9200); do
+    printf '.'
+    sleep 1
+done
 
 echo '{"index" : {"number_of_replicas" : 2}}' | http PUT :9200/_settings
 
-PUT /_template/custom_monitoring
 echo '{
     "template": ".monitoring-*",
     "order": 1,
@@ -111,10 +159,8 @@ echo '{
 }' | http PUT :9200/_template/custom_monitoring
 
 
-
-
-## grab some shell niceties
-wget -O .tmux.conf https://git.io/v9FuI
+## tmux niceties
+wget -O ~/.tmux.conf https://git.io/v9FuI
 
 ## python 
 pip install --upgrade pip
@@ -219,8 +265,6 @@ EOF
 
 gcloud docker -- pull eu.gcr.io/open-targets/mrtarget:${CONTAINER_TAG}
 
-## use the custom config
-export LUIGI_CONFIG_PATH=~/luigi.cfg
 ## central scheduler for the visualization
 luigid --background
 
