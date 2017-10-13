@@ -94,11 +94,13 @@ EOF
 curl -sSO https://dl.google.com/cloudagents/install-logging-agent.sh
 bash install-logging-agent.sh
 
+docker network create esnet
 
 ## Elasticsearch 
 # TODO make sure that when the process gets restarted with different memory and CPU requirements, this command update. Perhaps needs to be in a systemd service?
 docker run -d -p 9200:9200 -p 9300:9300 \
     --name elasticsearch \
+    --network=esnet \
     -v esdatavol:/usr/share/elasticsearch/data \
     -e "discovery.type=single-node" \
     -e "xpack.security.enabled=false" \
@@ -129,7 +131,7 @@ until $(curl --output /dev/null --silent --head --fail http://127.0.0.1:9200); d
     sleep 1
 done
 
-echo '{"index" : {"number_of_replicas" : 2}}' | http PUT :9200/_settings
+echo '{"index" : {"number_of_replicas" : 0}}' | http PUT :9200/_settings
 
 echo '{
     "template": ".monitoring-*",
@@ -157,6 +159,7 @@ echo '{
         "number_of_replicas": 0
         }
 }' | http PUT :9200/_template/custom_monitoring
+
 
 
 ## tmux niceties
@@ -211,7 +214,7 @@ unhandled_exception=40
 [elasticsearch]
 marker-index = hannibal_status_log
 marker-doc-type = entry
-eshost = 127.0.0.1
+eshost = elasticsearch
 esport = 9200
 
 [DEFAULT] 
@@ -268,14 +271,35 @@ gcloud docker -- pull eu.gcr.io/open-targets/mrtarget:${CONTAINER_TAG}
 ## central scheduler for the visualization
 luigid --background
 
-## start luigi run
+echo >> start luigi run
 cd /hannibal/src
+export LUIGI_CONFIG_PATH=~/luigi.cfg
 PYTHONPATH="." luigi --module pipeline-dockertask DataRelease --workers 1
 
 # tmux new -d -s luigi
 # tmux send-keys -t luigi 'source venv/bin/activate' C-m
 # tmux send-keys -t luigi 'export LUIGI_CONFIG_PATH=/hannibal/luigi.cfg' C-m 
 # tmux send-keys -t luigi 'PYTHONPATH="." luigi --module pipeline-dockertask DataRelease --local-scheduler --workers 3' C-m
+
+
+echo configure gcs snapshot plugin repository
+
+cat <<EOF > /root/snapshot_gcs.json
+{
+  "type": "gcs",
+  "settings": {
+    "bucket": "ot-snapshots",
+    "base_path": "${cluster_id}",
+    "max_restore_bytes_per_sec": "1000mb",
+    "max_snapshot_bytes_per_sec": "1000mb"
+  }
+}
+EOF
+
+
+# # wait enough to get elasticsearch running and ready
+# sleep 60 && http --check-status -p b --pretty none PUT localhost:9200/_snapshot/${cluster_id} @/root/snapshot_gcs.json
+
 
 
 # TODO:
