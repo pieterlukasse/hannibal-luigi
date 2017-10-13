@@ -60,8 +60,8 @@ class MrTargetTask(DockerTask):
         # if not os.path.exists(datadir):
         #     os.makedirs(datadir)
 
-        with open(logfile, 'a'):
-            os.utime(logfile)
+        with open(os.path.expanduser(logfile), 'a'):
+            os.utime(os.path.expanduser(logfile), None)
     
         return [logfile + ':/usr/src/app/output.log']
     
