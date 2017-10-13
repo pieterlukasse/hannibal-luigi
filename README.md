@@ -1,12 +1,13 @@
-## ETL workflow at open Targets
+# Launch MrTarget on a mission
+How we run our data pipeline (mrTarget) with luigi and docker, on a google cloud machine.
 
 ![hannibal](http://s2.quickmeme.com/img/a9/a9ed842f739e930dc8e9340bafbbaeaf77994c50c74fc6a86b046b54cb9b2c59.jpg)
 
 
+Automated thanks to [Luigi](https://github.com/spotify/luigi)
 
-automated thanks to [Luigi](https://github.com/spotify/luigi)
 
-
+## Run locally
 
 ### Install
 ```shell
@@ -47,3 +48,101 @@ $ ACCESS_TOKEN=$(curl -H 'Metadata-Flavor: Google' $SVC_ACCT/token \
 $ docker login -u _token -p $ACCESS_TOKEN https://gcr.io
 $ docker run --rm gcr.io/<your-project>/<your-image> <command>
 ```
+
+
+# How to launch the pipeline
+
+Authenticate to google cloud and press go!:
+```sh
+./launch_gce.sh <container_tag>
+```
+
+The task definition is a single python file kept in the [hannibal public repo](https://github.com/opentargets/hannibal-luigi)
+
+To debug whether the init script has worked, log in:
+```sh
+gcloud compute ssh <theinstancename>
+### ... and once you are logged in... 
+cat /var/log/daemon.log
+```
+
+
+### Architectural decision records (ie. why did i write it this way):
+
+* debian because mkarmona likes it
+* ES as docker because I am not going to *ever* deal with java and jvm
+* ES docker [production setup](https://www.elastic.co/guide/en/elasticsearch/reference/current/docker.html#docker-cli-run-prod-mode) respected (memory locks, docker volumes, etc, etc.. ) because we want ES to be as fast as possible
+* 250GB ssd for increased I/O speed
+* we are not attaching a separate disk for simplicity - and also becuase then the disk gets deleted when we delete the instances down the line
+* ES and pipeline on the same (BIG) machine
+    * 8 cores for ES, 32 for mrTarget, 52GB ram for ES/ 200GB for mrTarget
+
+
+Notice that:
+We are passing the container tag at launch and the container gets pulled once at the beginning of the pipeline.
+
+# TODO
+* elasticsearch IP to point to in case you want to run without ES
+* stop the instance on its own after is done
+* on pre-emptible signal stop the machine and flush ES to disk
+* mrTarget --val should read a .ini file with the URIs of the data
+add data version
+
+
+
+
+Use cases:
+==========
+- i want to have an API+ES up for 2-4 days while frontend develops
+- i want to run weekly for CD` 
+
+
+CI/CD weekly flow
+=================
+1. spin ES
+2. run master of mrTarget
+3. test with QC that we have so far
+4. if it passes, take a snapshot
+5. stop the worker
+6. ? stop ES
+7. copy the snapshot into the main dev ES where it gets labelled with the date
+8. remove the previous weekly from the main ES and the previous snapshots (we don't care about weeklies)
+
+a big dev ES
+============
+up before a Release
+down - cleaned- after a Release
+highmem-10
+
+
+Release:
+========
+
+
+
+
+
+# executing task, monitoring
+Login and attach yourself to the tmux session which is running the tasks.
+```sh
+tmux attach -t luigi
+```
+
+# Developing
+It can be quite useful to edit the Luigi task directly on the remote machine executing. An easy way is to install SSHFS on your laptop, which on macOs is done with `brew install sshfs`.
+
+SSHFS reads from the ~/.ssh/config file, so create one using `gcloud compute config-ssh` as explained in:
+https://cloud.google.com/sdk/gcloud/reference/compute/config-ssh
+
+Then try to connect
+
+```sh
+sshfs -o auto_cache,reconnect,defer_permissions,noappledouble,negative_vncache,volname=hannibal 
+
+sudo mkdir /mnt/gce
+sudo chown <user> /mnt/gce
+
+sshfs -o auto_cache,reconnect,defer_permissions,noappledouble,negative_vncache,IdentityFile=~/.ssh/google_compute_engine.pub <user_name>@<instance-name>.<region>.<project_id>:/home/<user_name> /mnt/gce
+
+```
+
