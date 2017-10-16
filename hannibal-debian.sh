@@ -86,7 +86,7 @@ ES_CPU=\$(awk '/cpu cores/ {if (\$NF/2 < 8) print \$NF/2; else print 8}' /proc/c
 INSTANCE_NAME=\$(http --ignore-stdin --check-status 'http://metadata.google.internal/computeMetadata/v1/instance/name'  "Metadata-Flavor:Google" -p b --pretty none)
 CONTAINER_TAG=\$(http --ignore-stdin --check-status 'http://metadata.google.internal/computeMetadata/v1/instance/attributes/container-tag'  "Metadata-Flavor:Google" -p b --pretty none)
 
-LUIGI_CONFIG_PATH=~/luigi.cfg
+LUIGI_CONFIG_PATH=/hannibal/luigi.cfg
 EOF
 
 ## install stackdriver logging agent 
@@ -114,9 +114,8 @@ docker run -d -p 9200:9200 -p 9300:9300 \
     -m ${ES_MEM}M \
     --ulimit memlock=-1:-1 \
     --restart=always \
-    docker.elastic.co/elasticsearch/elasticsearch:5.6.2
-
-
+    quay.io/opentargets/docker-elasticsearch-singlenode:5.6
+    #docker.elastic.co/elasticsearch/elasticsearch:5.6.2
 
 # # NOTE: we don't have to explicity set the ulimits over files, since
 # the debian docker daemon sets acceptable ones 
@@ -125,7 +124,7 @@ docker run -d -p 9200:9200 -p 9300:9300 \
 
 
 ## Change index settings (after ES is ready)
-
+# # wait enough to get elasticsearch running and ready
 until $(curl --output /dev/null --silent --head --fail http://127.0.0.1:9200); do
     printf '.'
     sleep 1
@@ -159,6 +158,22 @@ echo '{
         "number_of_replicas": 0
         }
 }' | http PUT :9200/_template/custom_monitoring
+
+
+echo configure gcs snapshot plugin repository
+cat <<EOF > /root/snapshot_gcs.json
+{
+  "type": "gcs",
+  "settings": {
+    "bucket": "ot-snapshots",
+    "base_path": "${INSTANCE_NAME}",
+    "max_restore_bytes_per_sec": "1000mb",
+    "max_snapshot_bytes_per_sec": "1000mb"
+  }
+}
+EOF
+
+http --check-status -p b --pretty none PUT :9200/_snapshot/${INSTANCE_NAME} @/root/snapshot_gcs.json
 
 
 
@@ -282,23 +297,8 @@ PYTHONPATH="." luigi --module pipeline-dockertask DataRelease --workers 1
 # tmux send-keys -t luigi 'PYTHONPATH="." luigi --module pipeline-dockertask DataRelease --local-scheduler --workers 3' C-m
 
 
-echo configure gcs snapshot plugin repository
-
-cat <<EOF > /root/snapshot_gcs.json
-{
-  "type": "gcs",
-  "settings": {
-    "bucket": "ot-snapshots",
-    "base_path": "${cluster_id}",
-    "max_restore_bytes_per_sec": "1000mb",
-    "max_snapshot_bytes_per_sec": "1000mb"
-  }
-}
-EOF
 
 
-# # wait enough to get elasticsearch running and ready
-# sleep 60 && http --check-status -p b --pretty none PUT localhost:9200/_snapshot/${cluster_id} @/root/snapshot_gcs.json
 
 
 
