@@ -192,8 +192,7 @@ mkdir /hannibal/data
 git clone https://github.com/opentargets/hannibal.git /hannibal/src
 pip install -r /hannibal/src/requirements.txt
 
-mkdir /etc/luigi
-cat <<EOF > /etc/luigi/luigi.cfg
+cat <<EOF > /hannibal/src/luigi.cfg
 # scheduler options first
 
 [core]
