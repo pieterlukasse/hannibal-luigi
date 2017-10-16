@@ -53,7 +53,9 @@ class MrTargetTask(DockerTask):
 
     @property
     def container_options(self):
-        return {'networking_config':self._client.create_networking_config({'esnet': self._client.create_endpoint_config()})}
+        opts = self._client.create_networking_config({'esnet': self._client.create_endpoint_config()})
+        print opts
+        return {'networking_config':opts}
 
     @property
     def binds(self):
