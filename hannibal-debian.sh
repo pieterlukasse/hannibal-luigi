@@ -299,11 +299,17 @@ gcloud docker -- pull eu.gcr.io/open-targets/mrtarget:${CONTAINER_TAG}
 ## central scheduler for the visualization
 luigid --background
 
-echo >> start luigi run
+# make sure luigi runs at reboot
+cat <<EOF /root/launch_luigi.sh
 cd /hannibal/src
 export LUIGI_CONFIG_PATH=/hannibal/src/luigi.cfg
 PYTHONPATH="." luigi --module pipeline-dockertask DataRelease --workers 1
-
+EOF
+chmod u+x /root/launch_luigi.sh
+cat <<EOF /etc/cron.d/luigi
+@reboot  /root/launch_luigi.sh
+@reboot  /usr/local/bin/luigid --background
+EOF
 
 # tmux new -d -s luigi
 # tmux send-keys -t luigi 'source venv/bin/activate' C-m
