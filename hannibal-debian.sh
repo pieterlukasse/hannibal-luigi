@@ -311,10 +311,9 @@ cat <<EOF /etc/cron.d/luigi
 @reboot  /usr/local/bin/luigid --background
 EOF
 
-# tmux new -d -s luigi
-# tmux send-keys -t luigi 'source venv/bin/activate' C-m
-# tmux send-keys -t luigi 'export LUIGI_CONFIG_PATH=/hannibal/luigi.cfg' C-m 
-# tmux send-keys -t luigi 'PYTHONPATH="." luigi --module pipeline-dockertask DataRelease --local-scheduler --workers 3' C-m
+echo launching luigi
+/root/launch_luigi.sh
+
 
 
 
