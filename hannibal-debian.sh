@@ -89,6 +89,21 @@ CONTAINER_TAG=\$(http --ignore-stdin --check-status 'http://metadata.google.inte
 LUIGI_CONFIG_PATH=/hannibal/luigi.cfg
 EOF
 
+echo "export variables"
+
+# I am also declaring the variables here, because .bashrc is not sourced
+## Compute half memtotal gigs 
+# cap ES heap at 26 to safely remain under zero-base compressed oops limit
+# see: https://www.elastic.co/guide/en/elasticsearch/reference/current/heap-size.html
+export ES_MEM=$(awk '/MemTotal/ {half=$2/1024/2; if (half > 52*1024) printf 52*1024; else printf "%d", half}' /proc/meminfo)
+export ES_HEAP=$(($ES_MEM/2))
+## Cap CPUs for ES to 8
+export ES_CPU=$(awk '/cpu cores/ {if ($NF/2 < 8) print $NF/2; else print 8}' /proc/cpuinfo)
+export INSTANCE_NAME=$(http --ignore-stdin --check-status 'http://metadata.google.internal/computeMetadata/v1/instance/name'  "Metadata-Flavor:Google" -p b --pretty none)
+export CONTAINER_TAG=$(http --ignore-stdin --check-status 'http://metadata.google.internal/computeMetadata/v1/instance/attributes/container-tag'  "Metadata-Flavor:Google" -p b --pretty none)
+export LUIGI_CONFIG_PATH=/hannibal/src/luigi.cfg
+
+
 ## install stackdriver logging agent 
 # as explained in https://cloud.google.com/logging/docs/agent/installation
 curl -sSO https://dl.google.com/cloudagents/install-logging-agent.sh
@@ -96,7 +111,7 @@ bash install-logging-agent.sh
 
 docker network create esnet
 
-## Elasticsearch 
+echo Spin elasticsearch 
 # TODO make sure that when the process gets restarted with different memory and CPU requirements, this command update. Perhaps needs to be in a systemd service?
 docker run -d -p 9200:9200 -p 9300:9300 \
     --name elasticsearch \
@@ -122,7 +137,6 @@ docker run -d -p 9200:9200 -p 9300:9300 \
 # Tested with `docker run --rm centos:7 /bin/bash -c 'ulimit -Hn && ulimit -Sn && ulimit -Hu && ulimit -Su'`
 
 
-
 ## Change index settings (after ES is ready)
 # # wait enough to get elasticsearch running and ready
 until $(curl --output /dev/null --silent --head --fail http://127.0.0.1:9200); do
@@ -130,7 +144,6 @@ until $(curl --output /dev/null --silent --head --fail http://127.0.0.1:9200); d
     sleep 1
 done
 
-echo '{"index" : {"number_of_replicas" : 0}}' | http PUT :9200/_settings
 
 echo '{
     "template": ".monitoring-*",
@@ -161,6 +174,7 @@ echo '{
 
 
 echo configure gcs snapshot plugin repository
+# > /root/snapshot_gcs.json
 cat <<EOF > /root/snapshot_gcs.json
 {
   "type": "gcs",
@@ -173,7 +187,7 @@ cat <<EOF > /root/snapshot_gcs.json
 }
 EOF
 
-http --check-status -p b --pretty none PUT :9200/_snapshot/${INSTANCE_NAME} @/root/snapshot_gcs.json
+http --check-status -p b --pretty none PUT :9200/_snapshot/${INSTANCE_NAME} < /root/snapshot_gcs.json
 
 
 
@@ -287,8 +301,9 @@ luigid --background
 
 echo >> start luigi run
 cd /hannibal/src
-export LUIGI_CONFIG_PATH=~/luigi.cfg
+export LUIGI_CONFIG_PATH=/hannibal/src/luigi.cfg
 PYTHONPATH="." luigi --module pipeline-dockertask DataRelease --workers 1
+
 
 # tmux new -d -s luigi
 # tmux send-keys -t luigi 'source venv/bin/activate' C-m
