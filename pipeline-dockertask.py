@@ -223,6 +223,9 @@ class Relations(MrTargetTask):
 
 
 class DataRelease(luigi.WrapperTask):
+    mrtargetbranch = luigi.Parameter(default='master')
+    mrtargetrepo = luigi.Parameter(default="quay.io/cttv/data_pipeline", significant=False)
+    data_version = luigi.Parameter(default=datetime.date.today().strftime("hannibal-%y.%m"))
     def requires(self):
         yield SearchObjects()
         yield InjectedEvidence()

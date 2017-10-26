@@ -86,7 +86,7 @@ ES_CPU=\$(awk '/cpu cores/ {if (\$NF/2 < 8) print \$NF/2; else print 8}' /proc/c
 INSTANCE_NAME=\$(http --ignore-stdin --check-status 'http://metadata.google.internal/computeMetadata/v1/instance/name'  "Metadata-Flavor:Google" -p b --pretty none)
 CONTAINER_TAG=\$(http --ignore-stdin --check-status 'http://metadata.google.internal/computeMetadata/v1/instance/attributes/container-tag'  "Metadata-Flavor:Google" -p b --pretty none)
 
-LUIGI_CONFIG_PATH=/hannibal/luigi.cfg
+LUIGI_CONFIG_PATH=/hannibal/src/luigi.cfg
 EOF
 
 echo "export variables"
@@ -300,13 +300,15 @@ gcloud docker -- pull eu.gcr.io/open-targets/mrtarget:${CONTAINER_TAG}
 luigid --background
 
 # make sure luigi runs at reboot
-cat <<EOF /root/launch_luigi.sh
+cat <<EOF >/root/launch_luigi.sh
 cd /hannibal/src
 export LUIGI_CONFIG_PATH=/hannibal/src/luigi.cfg
 PYTHONPATH="." luigi --module pipeline-dockertask DataRelease --workers 1
 EOF
+
 chmod u+x /root/launch_luigi.sh
-cat <<EOF /etc/cron.d/luigi
+
+cat <<EOF >/etc/cron.d/luigi
 @reboot  /root/launch_luigi.sh
 @reboot  /usr/local/bin/luigid --background
 EOF
