@@ -34,6 +34,10 @@ apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y docker-ce
 
 systemctl enable docker
 
+
+## tmux niceties
+wget -O ~/.tmux.conf https://git.io/v9FuI
+
 cat <<EOF >> ~/.bashrc
 # Sensible Bash - An attempt at saner Bash defaults
 # Repository: https://github.com/mrzool/bash-sensible
@@ -189,14 +193,9 @@ EOF
 
 http --check-status -p b --pretty none PUT :9200/_snapshot/${INSTANCE_NAME} < /root/snapshot_gcs.json
 
-
-
-## tmux niceties
-wget -O ~/.tmux.conf https://git.io/v9FuI
-
 ## python 
-pip install --upgrade pip
-pip install elasticsearch-curator
+pip install --upgrade pip 
+pip install --upgrade elasticsearch-curator
 
 mkdir /hannibal
 mkdir /hannibal/logs
@@ -303,7 +302,7 @@ luigid --background
 cat <<EOF >/root/launch_luigi.sh
 cd /hannibal/src
 export LUIGI_CONFIG_PATH=/hannibal/src/luigi.cfg
-PYTHONPATH="." luigi --module pipeline-dockertask DataRelease --workers 1
+PYTHONPATH="." luigi --module pipeline-dockertask DataRelease --workers 3
 EOF
 
 chmod u+x /root/launch_luigi.sh

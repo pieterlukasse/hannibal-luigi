@@ -28,7 +28,9 @@ To debug whether the init script has worked, log in:
 
 ```sh
 gcloud compute ssh <theinstancename>
-### ... and once you are logged in... 
+### ... and once you are logged in switch to root...
+sudo su -
+## now see the output
 cat /var/log/daemon.log
 ```
 
@@ -44,7 +46,8 @@ cat /var/log/daemon.log
   * 8 cores for ES, 32 for mrTarget, 52GB ram for ES/ 200GB for mrTarget
 
 Notice that:
-We are passing the container tag at launch and the container gets pulled once at the beginning of the pipeline.
+We are passing the container tag at launch and the container gets pulled **once** at the beginning of the pipeline.
+
 
 ## TODO
 
