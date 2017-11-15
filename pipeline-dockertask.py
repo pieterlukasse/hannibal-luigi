@@ -112,6 +112,7 @@ class MrTargetTask(DockerTask):
         method.
         '''
         DockerTask.run(self)
+        self.output().open("w").close()
 
 
 class DryRun(MrTargetTask):
@@ -129,13 +130,16 @@ class Expression(MrTargetTask):
 class Reactome(MrTargetTask):
     run_options = ['--rea']
 
-class MousePheno(MrTargetTask):
+class HumanPhenotype(MrTargetTask):
+    run_options = ['--hpo']
+
+class MammalianPhenotype(MrTargetTask):
     run_options = ['--mp']
 
 class GeneData(MrTargetTask):
     run_options = ['--gen']
     def requires(self):
-        return UniProt(), Ensembl(), Expression(), Reactome(), MousePheno()
+        return UniProt(), Ensembl(), Expression(), Reactome(), MammalianPhenotype()
 
 class EFO(MrTargetTask):
     run_options = ['--efo']
