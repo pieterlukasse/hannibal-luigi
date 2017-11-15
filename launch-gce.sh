@@ -1,12 +1,13 @@
 #!/usr/bin/env bash
 
 if [ $# -ne 1 ]; then
-    echo "Usage: $0 <container_tag>"
+    echo "Usage: $0 <container_tag> <ES_URL>"
     exit 1
 fi
 
 DATE=$(date +"%m%d-%H%M")
-
+ESMACHINE=${2:-local}
+echo Will point to ES: $ESMACHINE
 
 
 gcloud beta compute --project "open-targets-eu-dev" instances create "hannibal-$1-$DATE" \
@@ -15,7 +16,6 @@ gcloud beta compute --project "open-targets-eu-dev" instances create "hannibal-$
  --subnet "default" \
  --no-restart-on-failure \
  --maintenance-policy "TERMINATE" \
- --preemptible \
  --scopes default,storage-rw \
  --min-cpu-platform "Automatic" \
  --image-project "debian-cloud" \
@@ -25,8 +25,11 @@ gcloud beta compute --project "open-targets-eu-dev" instances create "hannibal-$
  --boot-disk-device-name "hannibal-$1-$DATE" \
  --metadata-from-file startup-script=hannibal-debian.sh \
  --metadata "container-tag=$1" \
+ --metadata "es-url=$2" \
  --labels app=hannibal
 #  --machine-type "custom-40-266240" \
+#  --preemptible \
+
 
 
 

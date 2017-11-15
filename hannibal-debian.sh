@@ -88,7 +88,10 @@ ES_HEAP=\$((\$ES_MEM/2))
 ES_CPU=\$(awk '/cpu cores/ {if (\$NF/2 < 8) print \$NF/2; else print 8}' /proc/cpuinfo)
 
 INSTANCE_NAME=\$(http --ignore-stdin --check-status 'http://metadata.google.internal/computeMetadata/v1/instance/name'  "Metadata-Flavor:Google" -p b --pretty none)
+
 CONTAINER_TAG=\$(http --ignore-stdin --check-status 'http://metadata.google.internal/computeMetadata/v1/instance/attributes/container-tag'  "Metadata-Flavor:Google" -p b --pretty none)
+
+ELASTICSEARCH=\$(http --ignore-stdin --check-status 'http://metadata.google.internal/computeMetadata/v1/instance/attributes/es-url'  "Metadata-Flavor:Google" -p b --pretty none)
 
 LUIGI_CONFIG_PATH=/hannibal/src/luigi.cfg
 EOF
@@ -113,59 +116,64 @@ export LUIGI_CONFIG_PATH=/hannibal/src/luigi.cfg
 curl -sSO https://dl.google.com/cloudagents/install-logging-agent.sh
 bash install-logging-agent.sh
 
-docker network create esnet
+if [ "$ELASTICSEARCH" = "local" ]; then
 
-echo Spin elasticsearch 
-# TODO make sure that when the process gets restarted with different memory and CPU requirements, this command update. Perhaps needs to be in a systemd service?
-docker run -d -p 9200:9200 -p 9300:9300 \
-    --name elasticsearch \
-    --network=esnet \
-    -v esdatavol:/usr/share/elasticsearch/data \
-    -e "discovery.type=single-node" \
-    -e "xpack.security.enabled=false" \
-    -e "cluster.name=hannibal" \
-    -e "bootstrap.memory_lock=true" \
-    -e "ES_JAVA_OPTS=-Xms${ES_HEAP}m -Xmx${ES_HEAP}m" \
-    -e "reindex.remote.whitelist=10.*.*.*:*, _local_:*" \
-    --log-driver=gcplogs \
-    --log-opt gcp-log-cmd=true \
-    --cpus=${ES_CPU} \
-    -m ${ES_MEM}M \
-    --ulimit memlock=-1:-1 \
-    --restart=always \
-    quay.io/opentargets/docker-elasticsearch-singlenode:5.6
-    #docker.elastic.co/elasticsearch/elasticsearch:5.6.2
+    echo "spin my own elasticsearch using docker... "
 
-# # NOTE: we don't have to explicity set the ulimits over files, since
-# the debian docker daemon sets acceptable ones 
-# Tested with `docker run --rm centos:7 /bin/bash -c 'ulimit -Hn && ulimit -Sn && ulimit -Hu && ulimit -Su'`
+    docker network create esnet
 
+    echo Spin elasticsearch 
+    # TODO make sure that when the process gets restarted with different memory and CPU requirements, this command update. Perhaps needs to be in a systemd service?
+    docker run -d -p 9200:9200 -p 9300:9300 \
+        --name elasticsearch \
+        --network=esnet \
+        -v esdatavol:/usr/share/elasticsearch/data \
+        -e "discovery.type=single-node" \
+        -e "xpack.security.enabled=false" \
+        -e "cluster.name=hannibal" \
+        -e "bootstrap.memory_lock=true" \
+        -e "ES_JAVA_OPTS=-Xms${ES_HEAP}m -Xmx${ES_HEAP}m" \
+        -e "reindex.remote.whitelist=10.*.*.*:*, _local_:*" \
+        --log-driver=gcplogs \
+        --log-opt gcp-log-cmd=true \
+        --cpus=${ES_CPU} \
+        -m ${ES_MEM}M \
+        --ulimit memlock=-1:-1 \
+        --restart=always \
+        quay.io/opentargets/docker-elasticsearch-singlenode:5.6
+        #docker.elastic.co/elasticsearch/elasticsearch:5.6.2
 
-## Change index settings (after ES is ready)
-# # wait enough to get elasticsearch running and ready
-until $(curl --output /dev/null --silent --head --fail http://127.0.0.1:9200); do
-    printf '.'
-    sleep 1
-done
-
-echo '{"index":{"number_of_replicas":0}}' | http PUT :9200/_settings
+    # # NOTE: we don't have to explicity set the ulimits over files, since
+    # the debian docker daemon sets acceptable ones 
+    # Tested with `docker run --rm centos:7 /bin/bash -c 'ulimit -Hn && ulimit -Sn && ulimit -Hu && ulimit -Su'`
 
 
-echo configure gcs snapshot plugin repository
-# > /root/snapshot_gcs.json
-cat <<EOF > /root/snapshot_gcs.json
+    ## Change index settings (after ES is ready)
+    # # wait enough to get elasticsearch running and ready
+    until $(curl --output /dev/null --silent --head --fail http://127.0.0.1:9200); do
+        printf '.'
+        sleep 1
+    done
+
+    echo '{"index":{"number_of_replicas":0}}' | http PUT :9200/_settings
+
+
+    echo configure gcs snapshot plugin repository
+    cat <<EOF > /root/snapshot_gcs.json
 {
-  "type": "gcs",
-  "settings": {
+"type": "gcs",
+"settings": {
     "bucket": "ot-snapshots",
     "base_path": "${INSTANCE_NAME}",
     "max_restore_bytes_per_sec": "1000mb",
     "max_snapshot_bytes_per_sec": "1000mb"
-  }
+}
 }
 EOF
 
-http --check-status -p b --pretty none PUT :9200/_snapshot/${INSTANCE_NAME} < /root/snapshot_gcs.json
+    http --check-status -p b --pretty none PUT :9200/_snapshot/${INSTANCE_NAME} < /root/snapshot_gcs.json
+
+fi
 
 ## python 
 pip install --upgrade pip 
