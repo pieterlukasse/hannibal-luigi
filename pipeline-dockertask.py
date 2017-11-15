@@ -91,7 +91,7 @@ class MrTargetTask(DockerTask):
 
     def output(self):
         """
-        Returns a ElasticsearchTarget representing the inserted dataset.
+        Returns a local Target representing the inserted dataset.
         """
         return luigi.LocalTarget('/hannibal/%s%s.done' % (self.name,self.data_version))
 

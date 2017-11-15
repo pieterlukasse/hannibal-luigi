@@ -187,6 +187,7 @@ mkdir /hannibal/data
 git clone https://github.com/opentargets/hannibal.git /hannibal/src
 pip install -r /hannibal/src/requirements.txt
 
+#envsubst < /hannibal/src/luigi.cfg.template > /hannibal/src/luigi.cfg
 cat <<EOF > /hannibal/src/luigi.cfg
 # scheduler options first
 
@@ -202,10 +203,6 @@ not_run=25
 task_failed=30
 scheduling_error=35
 unhandled_exception=40
-
-
-# From here onwards, the config file will contain URLs for each of the steps
-# and will keep track of each version using version control
 
 # We will branch the data_pipeline for each release (eg. mar_2017)
 # and use that branch in the config.
