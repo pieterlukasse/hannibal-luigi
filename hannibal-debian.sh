@@ -142,7 +142,7 @@ if [ "$ELASTICSEARCH" = "elasticsearch" ]; then
         --ulimit memlock=-1:-1 \
         --restart=always \
         gcr.io/open-targets-eu-dev/github-opentargets-docker-elasticsearch-singlenode:5.6
-        
+
         #quay.io/opentargets/docker-elasticsearch-singlenode:5.6
         #docker.elastic.co/elasticsearch/elasticsearch:5.6.2
 
@@ -190,90 +190,8 @@ mkdir /hannibal/data
 git clone https://github.com/opentargets/hannibal.git /hannibal/src
 pip install -r /hannibal/src/requirements.txt
 
-#envsubst < /hannibal/src/luigi.cfg.template > /hannibal/src/luigi.cfg
-cat <<EOF > /hannibal/src/luigi.cfg
-# scheduler options first
+envsubst < /hannibal/src/luigi.cfg.template > /hannibal/src/luigi.cfg
 
-[core]
-logging_conf_file=hannibal_logging.cfg
-
-[retcode]
-# The following return codes are the recommended exit codes for Luigi
-# They are in increasing level of severity (for most applications)
-already_running=10
-missing_data=20
-not_run=25
-task_failed=30
-scheduling_error=35
-unhandled_exception=40
-
-# We will branch the data_pipeline for each release (eg. mar_2017)
-# and use that branch in the config.
-
-# Specifying parameter values here in the config file has the added benefit
-# that it becomes possible to specify the parameters only on the classes
-# that actually use the parameters. This avoids long command-line calls
-# such as: 
-# luigi --module opentargETL GeneData --date 2017-03-15 --OpenTargETLTask-date 2017-03-15
-# where you need to specify the parameter for each task in the dependency graph
-
-# an alternative approach is to use @inherits and @requires defined in luigi.util
-# http://luigi.readthedocs.io/en/stable/api/luigi.util.html
-
-[elasticsearch]
-marker-index = hannibal_status_log
-marker-doc-type = entry
-eshost = ${ELASTICSEARCH}
-esport = 9200
-
-[DEFAULT] 
-
-# the branch info is inherited by all tasks, but they !!MUST!! have a a section
-# below:
-
-mrtargetbranch = ${CONTAINER_TAG}
-mrtargetrepo = eu.gcr.io/open-targets/mrtarget
-#data_version = hannibal-17.09
-[UniProt]
-[Ensembl]
-[Expression]
-[Reactome]
-[GeneData]
-[EFO]
-[ECO]
-[Validate]
-[EvidenceObjects]
-[InjectedEvidence]
-[AssociationObjects]
-[SearchObjects]
-[Relations]
-[DataRelease]
-[DataDump]
-
-[evidences]
-# gsutil ls gs://ot-releases/17.09 | sed 's/gs/http/' | sed 's/\/\//\/\/storage.googleapis.com\//' | sed 's/^.*$/"&",/g'
-t2d_evidence_sources = [
-    "http://storage.googleapis.com/ot-releases/17.09/atlas-08-09-2017.json.gz",
-    "http://storage.googleapis.com/ot-releases/17.09/cancer_gene_census-30-08-2017.json.gz",
-    "http://storage.googleapis.com/ot-releases/17.09/chembl-10-10-2017.json.gz",
-    "http://storage.googleapis.com/ot-releases/17.09/europepmc-24-08-2017.json.gz",
-    "http://storage.googleapis.com/ot-releases/17.09/eva-24-08-2017.json.gz",
-    "http://storage.googleapis.com/ot-releases/17.09/gene2phenotype-30-08-2017.json.gz",
-    "http://storage.googleapis.com/ot-releases/17.09/genomics_england-05-09-2017.json",
-    "http://storage.googleapis.com/ot-releases/17.09/gwas_catalog-29-08-2017.json.gz",
-    "http://storage.googleapis.com/ot-releases/17.09/intogen-30-08-2017.json.gz",
-    "http://storage.googleapis.com/ot-releases/17.09/phenodigm-01-09-2017.json.gz",
-    "http://storage.googleapis.com/ot-releases/17.09/phewas_catalog-11-09-2017.json.gz",
-    "http://storage.googleapis.com/ot-releases/17.09/phewas_catalog_12-10-2017.json.gz",
-    "http://storage.googleapis.com/ot-releases/17.09/reactome-07-08-2017.json.gz",
-    "http://storage.googleapis.com/ot-releases/17.09/slapenrich-22-09-2017.json.gz",
-    "http://storage.googleapis.com/ot-releases/17.09/uniprot-07-09-2017.json.gz"
-    ]
-
-
-
-
-EOF
 
 gcloud docker -- pull eu.gcr.io/open-targets/mrtarget:${CONTAINER_TAG}
 
