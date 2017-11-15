@@ -148,33 +148,7 @@ until $(curl --output /dev/null --silent --head --fail http://127.0.0.1:9200); d
     sleep 1
 done
 
-
-echo '{
-    "template": ".monitoring-*",
-    "order": 1,
-    "settings": {
-        "number_of_shards": 1,
-        "number_of_replicas": 0
-        }
-}' | http PUT :9200/_template/custom_monitoring
-
-echo '{
-    "template": ".triggered*",
-    "order": 1,
-    "settings": {
-        "number_of_shards": 1,
-        "number_of_replicas": 0
-        }
-}' | http PUT :9200/_template/custom_monitoring
-
-echo '{
-    "template": ".watches*",
-    "order": 1,
-    "settings": {
-        "number_of_shards": 1,
-        "number_of_replicas": 0
-        }
-}' | http PUT :9200/_template/custom_monitoring
+echo '{"index":{"number_of_replicas":0}}' | http PUT :9200/_settings
 
 
 echo configure gcs snapshot plugin repository
