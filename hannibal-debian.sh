@@ -116,7 +116,7 @@ export LUIGI_CONFIG_PATH=/hannibal/src/luigi.cfg
 curl -sSO https://dl.google.com/cloudagents/install-logging-agent.sh
 bash install-logging-agent.sh
 
-if [ "$ELASTICSEARCH" = "local" ]; then
+if [ "$ELASTICSEARCH" = "elasticsearch" ]; then
 
     echo "spin my own elasticsearch using docker... "
 
@@ -223,7 +223,7 @@ unhandled_exception=40
 [elasticsearch]
 marker-index = hannibal_status_log
 marker-doc-type = entry
-eshost = elasticsearch
+eshost = ${ELASTICSEARCH}
 esport = 9200
 
 [DEFAULT] 

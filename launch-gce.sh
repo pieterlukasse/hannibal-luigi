@@ -6,8 +6,8 @@ if [ $# -ne 1 ]; then
 fi
 
 DATE=$(date +"%m%d-%H%M")
-ESMACHINE=${2:-local}
-echo Will point to ES: $ESMACHINE
+ESMACHINE=${2:-elasticsearch}
+echo Will point to ES: $ESMACHINE:9200
 
 
 gcloud beta compute --project "open-targets-eu-dev" instances create "hannibal-$1-$DATE" \
