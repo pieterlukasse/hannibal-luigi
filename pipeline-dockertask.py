@@ -20,19 +20,14 @@ class MrTargetTask(DockerTask):
     '''
     run_options = luigi.Parameter(default='-h')
     mrtargetbranch = luigi.Parameter(default='master')
-    mrtargetrepo = luigi.Parameter(default="quay.io/cttv/data_pipeline", significant=False)
+    mrtargetrepo = luigi.Parameter(default="eu.gcr.io/open-targets/mrtarget", significant=False)
     date = luigi.DateParameter(default=datetime.date.today(),significant=False)
     data_version = luigi.Parameter(default=datetime.date.today().strftime("hannibal-%y.%m"))
 
     '''As we are running multiple workers, the output must be a resource that is
        accessible by all workers, such as S3/distributedFileSys or database'''
 
-    # find which ES to point to. NOTE: this is only for the Luigi marker/status.
-    # For now we save the status and the data in the same cluster. BUT the
-    # pipeline actually operates on the cluster specified in the db.ini file.
-    # NOTE #2: we are going to save to ES for status because this eliminates the
-    # requirement for a local FS and does not introduce a dependency on S3,
-    # which one of our pharma partner may not be ready to take on
+    # find which ES to point to. 
     eshost = luigi.configuration.get_config().get('elasticsearch',
                                                   'eshost', '127.0.0.1')
     esport = luigi.configuration.get_config().get('elasticsearch',
@@ -54,7 +49,7 @@ class MrTargetTask(DockerTask):
     @property
     def container_options(self):
         opts = self._client.create_networking_config({'esnet': self._client.create_endpoint_config()})
-        print opts
+        logger.debug(opts)
         return {'networking_config':opts}
 
     @property
@@ -105,15 +100,8 @@ class MrTargetTask(DockerTask):
         """
         Returns a ElasticsearchTarget representing the inserted dataset.
         """
-        return ElasticsearchTarget(
-            host=self.eshost,
-            port=self.esport,
-            #http_auth=self.esauth,
-            index=self.marker_index,
-            doc_type=self.marker_doc_type,
-            update_id=self.task_id
-	    #extra_elasticsearch_args={'use_ssl':True,'verify_certs':True}
-            )
+        return luigi.LocalTarget('/hannibal/%s%s.done' % (self.name,self.data_version))
+
 
 
     def run(self):
@@ -124,7 +112,7 @@ class MrTargetTask(DockerTask):
         method.
         '''
         DockerTask.run(self)
-        self.output().touch()
+
 
 class DryRun(MrTargetTask):
     run_options = ['--dry-run']
@@ -224,7 +212,7 @@ class Relations(MrTargetTask):
 
 class DataRelease(luigi.WrapperTask):
     mrtargetbranch = luigi.Parameter(default='master')
-    mrtargetrepo = luigi.Parameter(default="quay.io/cttv/data_pipeline", significant=False)
+    mrtargetrepo = luigi.Parameter(default="eu.gcr.io/open-targets/mrtarget", significant=False)
     data_version = luigi.Parameter(default=datetime.date.today().strftime("hannibal-%y.%m"))
     def requires(self):
         yield SearchObjects()

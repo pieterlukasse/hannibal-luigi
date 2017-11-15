@@ -12,7 +12,7 @@ apt-get update && DEBIAN_FRONTEND=noninteractive \
     --force-yes \
     -fuy \
     -t stretch-backports install net-tools \
-                                    wget less tmux htop jq httpie\
+                                    wget less tmux htop jq httpie silversearcher-ag\
                                     uuid-runtime \
                                     python-pip \
                                     python-dev \
