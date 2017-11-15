@@ -1,13 +1,6 @@
 # scheduler options first
 
 [core]
-#logging_conf_file = logging.cfg
-
-# replace with the service that holds your luigi daemon
-# default-scheduler-host = scheduler.host.com
-# default-scheduler-port = 8082
-# default-scheduler-url = http://scheduler.host.com/
-
 logging_conf_file=hannibal_logging.cfg
 
 [retcode]
@@ -20,9 +13,6 @@ task_failed=30
 scheduling_error=35
 unhandled_exception=40
 
-
-# From here onwards, the config file will contain URLs for each of the steps
-# and will keep track of each version using version control
 
 # We will branch the data_pipeline for each release (eg. mar_2017)
 # and use that branch in the config.
@@ -38,25 +28,32 @@ unhandled_exception=40
 # http://luigi.readthedocs.io/en/stable/api/luigi.util.html
 
 [elasticsearch]
-# this defines the ES cluster where the STATUS is written. NOT the data.
-# Replace the dummy values in the local file:
-marker-index = luigi_status_log
-marker-doc-type = entry
-eshost = 127.0.0.1
+# the cluster passed on to the pipeline
+eshost = ${ELASTICSEARCH}
 esport = 9200
-esauth = readwrite:password
 
 [DEFAULT]
-# this is inherited by all tasks, as long as they have a section below:
-#date = 2017-03-16
+# this is inherited by all tasks, but they !!MUST!! have a section below:
 
-[MrTargetTask]
-mrtarget_branch = master
-
+mrtargetbranch = ${CONTAINER_TAG}
+mrtargetrepo = eu.gcr.io/open-targets/mrtarget
+#data_version = hannibal-17.09
+[DryRun]
+[UniProt]
+[Ensembl]
+[Expression]
+[Reactome]
+[HumanPhenotype]
+[MammalianPhenotype]
 [GeneData]
-
+[EFO]
+[ECO]
 [Validate]
-
-[ValidateAll] 
-
+[EvidenceObjects]
+[InjectedEvidence]
+[AssociationObjects]
+[SearchObjects]
+[Relations]
+[DataRelease]
+[DataDump]
 

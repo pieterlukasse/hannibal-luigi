@@ -5,7 +5,6 @@ import luigi
 import json
 import uuid
 from luigi.contrib.docker_runner import DockerTask
-from luigi.contrib.esindex import ElasticsearchTarget
 logger = logging.getLogger('luigi-interface')
 from docker import APIClient
 
@@ -35,12 +34,6 @@ class MrTargetTask(DockerTask):
     esauth = luigi.configuration.get_config().get('elasticsearch',
                                                   'esauth', None)
     
-    # read from the config file how to call the marker index, where
-    # to store the status of each task.
-    marker_index = luigi.configuration.get_config().get('elasticsearch',
-                                                        'marker-index', 'luigi_status_log')
-    marker_doc_type = luigi.configuration.get_config().get('elasticsearch',
-                                                           'marker-doc-type', 'entry')
 
     auto_remove = True
     force_pull = False
