@@ -97,8 +97,8 @@ LUIGI_CONFIG_PATH=/hannibal/src/luigi.cfg
 EOF
 
 echo "export variables"
+# NOTE I am also declaring the variables here, because .bashrc is not sourced during startup-script
 
-# I am also declaring the variables here, because .bashrc is not sourced
 ## Compute half memtotal gigs 
 # cap ES heap at 26 to safely remain under zero-base compressed oops limit
 # see: https://www.elastic.co/guide/en/elasticsearch/reference/current/heap-size.html
@@ -108,6 +108,7 @@ export ES_HEAP=$(($ES_MEM/2))
 export ES_CPU=$(awk '/cpu cores/ {if ($NF/2 < 8) print $NF/2; else print 8}' /proc/cpuinfo)
 export INSTANCE_NAME=$(http --ignore-stdin --check-status 'http://metadata.google.internal/computeMetadata/v1/instance/name'  "Metadata-Flavor:Google" -p b --pretty none)
 export CONTAINER_TAG=$(http --ignore-stdin --check-status 'http://metadata.google.internal/computeMetadata/v1/instance/attributes/container-tag'  "Metadata-Flavor:Google" -p b --pretty none)
+export ELASTICSEARCH=\$(http --ignore-stdin --check-status 'http://metadata.google.internal/computeMetadata/v1/instance/attributes/es-url'  "Metadata-Flavor:Google" -p b --pretty none)
 export LUIGI_CONFIG_PATH=/hannibal/src/luigi.cfg
 
 
@@ -140,7 +141,9 @@ if [ "$ELASTICSEARCH" = "elasticsearch" ]; then
         -m ${ES_MEM}M \
         --ulimit memlock=-1:-1 \
         --restart=always \
-        quay.io/opentargets/docker-elasticsearch-singlenode:5.6
+        gcr.io/open-targets-eu-dev/github-opentargets-docker-elasticsearch-singlenode:5.6
+        
+        #quay.io/opentargets/docker-elasticsearch-singlenode:5.6
         #docker.elastic.co/elasticsearch/elasticsearch:5.6.2
 
     # # NOTE: we don't have to explicity set the ulimits over files, since
