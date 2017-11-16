@@ -55,5 +55,5 @@ mrtargetrepo = eu.gcr.io/open-targets/mrtarget
 [SearchObjects]
 [Relations]
 [DataRelease]
-[DataDump]
+[ReleaseSnapshot]
 

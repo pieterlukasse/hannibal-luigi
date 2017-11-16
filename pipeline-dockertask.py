@@ -3,6 +3,7 @@ import datetime
 import os
 import luigi
 import json
+import requests
 import uuid
 from luigi.contrib.docker_runner import DockerTask
 logger = logging.getLogger('luigi-interface')
@@ -211,12 +212,34 @@ class DataRelease(luigi.WrapperTask):
         yield Relations()
 
 
-class DataDump(MrTargetTask):
-    '''when the API is deployed we can create the API dumps'''
+class ReleaseSnapshot(luigi.Task):
+    '''Build a snapshot of the release in gs://'''
+    
+    mrtargetbranch = luigi.Parameter(default='master')
+    # date = luigi.DateParameter(default=datetime.date.today(),significant=False)
+    data_version = luigi.Parameter(default=datetime.date.today().strftime("hannibal-%y.%m"))
+
+    def output(self):
+        taskid = '-'.join(['mrT', self.mrtargetbranch, 
+                         'snapshot',
+                         self.data_version])
+        return luigi.LocalTarget('/hannibal/status/%s.done' % taskid)
+
     def requires(self):
         return DataRelease()
 
-    run_options = ['--dump']
+    def run(self):
+        snapurl = "127.0.0.1:9200/_snapshot/%s/%s?wait_for_completion=true" %\
+                     (os.getenv('INSTANCE_NAME'),
+                     datetime.date.today().strftime("%y%m%d-%h%M"))
+        
+        payload = { "indices": self.data_version + '*',
+                    "ignore_unavailable": true, 
+                    "include_global_state": false}
+
+        r = requests.put(snapurl,data = payload)
+
+
 
 
 def main():
