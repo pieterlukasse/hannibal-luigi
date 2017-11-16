@@ -35,65 +35,31 @@ apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y docker-ce
 systemctl enable docker
 
 
-## tmux niceties
+## download my dotfiles for tmux and shell niceties
 wget -O ~/.tmux.conf https://git.io/v9FuI
+wget -O ~/.mybashrc https://git.io/vF1Pr
+cat ~/.mybashrc >> ~/.bashrc
 
+## add variables needed for ES and luigi
 cat <<EOF >> ~/.bashrc
-# Sensible Bash - An attempt at saner Bash defaults
-# Repository: https://github.com/mrzool/bash-sensible
-
-## GENERAL OPTIONS ##
-set -o noclobber
-shopt -s checkwinsize
-PROMPT_DIRTRIM=2
-bind Space:magic-space
-shopt -s globstar 2> /dev/null
-shopt -s nocaseglob;
-
-## SMARTER TAB-COMPLETION (Readline bindings) ##
-bind "set completion-ignore-case on"
-bind "set completion-map-case on"
-bind "set show-all-if-ambiguous on"
-bind "set mark-symlinked-directories on"
-
-## SANE HISTORY DEFAULTS ##
-shopt -s histappend
-shopt -s cmdhist
-PROMPT_COMMAND='history -a'
-HISTSIZE=500000
-HISTFILESIZE=100000
-HISTCONTROL="erasedups:ignoreboth"
-export HISTIGNORE="&:[ ]*:exit:ls:bg:fg:history:clear"
-HISTTIMEFORMAT='%F %T '
-# Enable incremental history search with up/down arrows (also Readline goodness)
-bind '"\e[A": history-search-backward'
-bind '"\e[B": history-search-forward'
-bind '"\e[C": forward-char'
-bind '"\e[D": backward-char'
-
-## BETTER DIRECTORY NAVIGATION ##
-shopt -s autocd 2> /dev/null
-shopt -s dirspell 2> /dev/null
-shopt -s cdspell 2> /dev/null
-CDPATH="."
 
 ### Variables I need for ES and Luigi ###
 ## Compute half memtotal gigs 
 # cap ES heap at 26 to safely remain under zero-base compressed oops limit
 # see: https://www.elastic.co/guide/en/elasticsearch/reference/current/heap-size.html
-ES_MEM=\$(awk '/MemTotal/ {half=\$2/1024/2; if (half > 52*1024) printf 52*1024; else printf "%d", half}' /proc/meminfo)
-ES_HEAP=\$((\$ES_MEM/2))
+export ES_MEM=\$(awk '/MemTotal/ {half=\$2/1024/2; if (half > 52*1024) printf 52*1024; else printf "%d", half}' /proc/meminfo)
+export ES_HEAP=\$((\$ES_MEM/2))
 
 ## Cap CPUs for ES to 8
-ES_CPU=\$(awk '/cpu cores/ {if (\$NF/2 < 8) print \$NF/2; else print 8}' /proc/cpuinfo)
+export ES_CPU=\$(awk '/cpu cores/ {if (\$NF/2 < 8) print \$NF/2; else print 8}' /proc/cpuinfo)
 
-INSTANCE_NAME=\$(http --ignore-stdin --check-status 'http://metadata.google.internal/computeMetadata/v1/instance/name'  "Metadata-Flavor:Google" -p b --pretty none)
+export INSTANCE_NAME=\$(http --ignore-stdin --check-status 'http://metadata.google.internal/computeMetadata/v1/instance/name'  "Metadata-Flavor:Google" -p b --pretty none)
 
-CONTAINER_TAG=\$(http --ignore-stdin --check-status 'http://metadata.google.internal/computeMetadata/v1/instance/attributes/container-tag'  "Metadata-Flavor:Google" -p b --pretty none)
+export CONTAINER_TAG=\$(http --ignore-stdin --check-status 'http://metadata.google.internal/computeMetadata/v1/instance/attributes/container-tag'  "Metadata-Flavor:Google" -p b --pretty none)
 
-ELASTICSEARCH=\$(http --ignore-stdin --check-status 'http://metadata.google.internal/computeMetadata/v1/instance/attributes/es-url'  "Metadata-Flavor:Google" -p b --pretty none)
+export ELASTICSEARCH=\$(http --ignore-stdin --check-status 'http://metadata.google.internal/computeMetadata/v1/instance/attributes/es-url'  "Metadata-Flavor:Google" -p b --pretty none)
 
-LUIGI_CONFIG_PATH=/hannibal/src/luigi.cfg
+export LUIGI_CONFIG_PATH=/hannibal/src/luigi.cfg
 EOF
 
 echo "export variables"
@@ -207,6 +173,7 @@ EOF
 
 chmod u+x /root/launch_luigi.sh
 
+# make sure the daemon and luigi process are rerun on reboot/restart of the machine.
 cat <<EOF >/etc/cron.d/luigi
 @reboot  /root/launch_luigi.sh
 @reboot  /usr/local/bin/luigid --background
