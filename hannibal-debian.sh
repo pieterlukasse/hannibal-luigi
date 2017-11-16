@@ -146,7 +146,7 @@ EOF
     http --check-status -p b --pretty none PUT :9200/_snapshot/${INSTANCE_NAME} < /root/snapshot_gcs.json
 
     echo start kibana in the background
-    docker run -p 5601:5601 --network esnet docker.elastic.co/kibana/kibana:5.6.3
+    docker run -p 5601:5601 --network esnet -d docker.elastic.co/kibana/kibana:5.6.3
 
 fi
 
