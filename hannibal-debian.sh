@@ -171,7 +171,7 @@ luigid --background
 cat <<EOF >/root/launch_luigi.sh
 cd /hannibal/src
 export LUIGI_CONFIG_PATH=/hannibal/src/luigi.cfg
-PYTHONPATH="." luigi --module pipeline-dockertask DataRelease --workers 3
+PYTHONPATH="." luigi --module pipeline-dockertask DataRelease --workers 5
 EOF
 
 chmod u+x /root/launch_luigi.sh

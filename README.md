@@ -6,7 +6,7 @@ How we run our data pipeline (mrTarget) with luigi and docker, on a google cloud
 
 Automated thanks to [Luigi](https://github.com/spotify/luigi)
 
-## How to launch the pipeline
+## TL;DR How to launch the pipeline
 
 Authenticate to google cloud (see the [quickstart guides](https://cloud.google.com/sdk/docs/quickstarts) ) and press go!:
 
