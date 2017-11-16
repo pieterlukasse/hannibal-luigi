@@ -51,7 +51,7 @@ export ES_MEM=\$(awk '/MemTotal/ {half=\$2/1024/2; if (half > 52*1024) printf 52
 export ES_HEAP=\$((\$ES_MEM/2))
 
 ## Cap CPUs for ES to 8
-export ES_CPU=\$(awk '/cpu cores/ {if (\$NF/2 < 8) print \$NF/2; else print 8}' /proc/cpuinfo)
+export ES_CPU=\$(nproc | awk '{if (\$NF/2 < 8) print \$NF/2; else print 8}')
 
 export INSTANCE_NAME=\$(http --ignore-stdin --check-status 'http://metadata.google.internal/computeMetadata/v1/instance/name'  "Metadata-Flavor:Google" -p b --pretty none)
 
@@ -71,10 +71,12 @@ echo "export variables"
 export ES_MEM=$(awk '/MemTotal/ {half=$2/1024/2; if (half > 52*1024) printf 52*1024; else printf "%d", half}' /proc/meminfo)
 export ES_HEAP=$(($ES_MEM/2))
 ## Cap CPUs for ES to 8
-export ES_CPU=$(awk '/cpu cores/ {if ($NF/2 < 8) print $NF/2; else print 8}' /proc/cpuinfo)
+export ES_CPU=$(nproc | awk '{if ($NF/2 < 8) print $NF/2; else print 8}')
+
+## read metadata
 export INSTANCE_NAME=$(http --ignore-stdin --check-status 'http://metadata.google.internal/computeMetadata/v1/instance/name'  "Metadata-Flavor:Google" -p b --pretty none)
 export CONTAINER_TAG=$(http --ignore-stdin --check-status 'http://metadata.google.internal/computeMetadata/v1/instance/attributes/container-tag'  "Metadata-Flavor:Google" -p b --pretty none)
-export ELASTICSEARCH=\$(http --ignore-stdin --check-status 'http://metadata.google.internal/computeMetadata/v1/instance/attributes/es-url'  "Metadata-Flavor:Google" -p b --pretty none)
+export ELASTICSEARCH=$(http --ignore-stdin --check-status 'http://metadata.google.internal/computeMetadata/v1/instance/attributes/es-url'  "Metadata-Flavor:Google" -p b --pretty none)
 export LUIGI_CONFIG_PATH=/hannibal/src/luigi.cfg
 
 
@@ -88,7 +90,8 @@ if [ "$ELASTICSEARCH" = "elasticsearch" ]; then
     echo "spin my own elasticsearch using docker... "
 
     docker network create esnet
-
+    gcloud docker -- pull gcr.io/open-targets-eu-dev/github-opentargets-docker-elasticsearch-singlenode:5.6
+    
     echo Spin elasticsearch 
     # TODO make sure that when the process gets restarted with different memory and CPU requirements, this command update. Perhaps needs to be in a systemd service?
     docker run -d -p 9200:9200 -p 9300:9300 \
@@ -119,9 +122,9 @@ if [ "$ELASTICSEARCH" = "elasticsearch" ]; then
 
     ## Change index settings (after ES is ready)
     # # wait enough to get elasticsearch running and ready
-    until $(curl --output /dev/null --silent --head --fail http://127.0.0.1:9200); do
+    until $(curl --output /dev/null --silent --fail http://127.0.0.1:9200/_cat/indices); do
         printf '.'
-        sleep 1
+        sleep 5
     done
 
     echo '{"index":{"number_of_replicas":0}}' | http PUT :9200/_settings
