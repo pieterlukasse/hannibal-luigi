@@ -19,10 +19,17 @@ The DAG that connects the pipeline steps is defined in `pipeline-dockertask.py`
 You can monitor the scheduler status by forwarding port 8082, for eg:
 
 ```sh
-gcloud compute ssh --ssh-flag="-L 8082:localhost:8082"  --project=open-targets-eu-dev hannibal-master-1013-1112 --zone=europe-west1-d
+gcloud compute ssh --ssh-flag="-L 8082:localhost:8082"  --project=open-targets-eu-dev <machine name> --zone=europe-west1-d
 ```
 
 and then browse to: http://localhost:8082/static/visualiser/index.html
+
+you can also see kibana:
+```sh
+gcloud compute ssh --ssh-flag="-L 5601:localhost:5601"  --project=open-targets-eu-dev <machine name> --zone=europe-west1-d
+```
+and then browse to: http://localhost:5601
+
 
 To debug whether the init script has worked, log in:
 
