@@ -144,32 +144,22 @@ class Validate(MrTargetTask):
     '''
     Run the validation step, which takes the JSON submitted by each provider
     and makes sure they adhere to our JSON schema.
-    Expects a list such as ['urlA','urlB'...]
+    Uses the default list contained in the pipeline
     '''
-    urls = luigi.Parameter()
     run_options = ['--val']
-
     def requires(self):
         return GeneData(), Reactome(), EFO(), ECO()
-
-    @property
-    def command(self):
-        return ' '.join(['mrtarget', '--val', '--input-file', self.urls])
-
 
 
 class EvidenceObjects(MrTargetTask):
     '''
-    Dummy task that triggers execution of all validate tasks
     Specify here the list of evidence
     Recreate evidence objects (JSON representations of each validated piece of evidence)
     and store them in the backend.
     '''
-    uris = json.loads(luigi.configuration.get_config().get('evidences',
-                                                           't2d_evidence_sources', '[]'))
 
     def requires(self):
-        return Validate(urls=','.join(self.uris))
+        return Validate()
 
     run_options = ['--evs']
 
