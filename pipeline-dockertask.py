@@ -96,7 +96,7 @@ class MrTargetTask(DockerTask):
         taskid = '-'.join(['mrT', self.mrtargetbranch, 
                          self.run_options[0].lstrip('-'),
                          self.data_version])
-        return luigi.LocalTarget('/hannibal/%s.done' % taskid)
+        return luigi.LocalTarget('/hannibal/status/%s.done' % taskid)
 
 
 

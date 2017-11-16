@@ -153,7 +153,7 @@ pip install --upgrade elasticsearch-curator
 
 mkdir /hannibal
 mkdir /hannibal/logs
-mkdir /hannibal/data
+mkdir /hannibal/status
 
 ## clone the hannibal repo with the task definition and install python packages needed
 git clone https://github.com/opentargets/hannibal.git /hannibal/src
