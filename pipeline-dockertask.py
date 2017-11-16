@@ -2,12 +2,10 @@ import logging
 import datetime
 import os
 import luigi
-import json
 import requests
 import uuid
 from luigi.contrib.docker_runner import DockerTask
 logger = logging.getLogger('luigi-interface')
-from docker import APIClient
 
 
 class MrTargetTask(DockerTask):
@@ -50,13 +48,13 @@ class MrTargetTask(DockerTask):
     def binds(self):
         logfile = '/hannibal/logs/mrtarget_' + self.run_options[0].strip('-') + '.log'
         # datadir = '/hannibal/data'
-        
+        #      
         # if not os.path.exists(datadir):
         #     os.makedirs(datadir)
 
         with open(os.path.expanduser(logfile), 'a'):
             os.utime(os.path.expanduser(logfile), None)
-    
+
         return [os.path.expanduser(logfile) + ':/usr/src/app/output.log']
     
     @property
@@ -234,10 +232,10 @@ class ReleaseSnapshot(luigi.Task):
                      datetime.date.today().strftime("%y%m%d-%h%M"))
         
         payload = { "indices": self.data_version + '*',
-                    "ignore_unavailable": true, 
-                    "include_global_state": false}
+                    "ignore_unavailable": "true", 
+                    "include_global_state": "false"}
 
-        r = requests.put(snapurl,data = payload)
+        requests.put(snapurl,data = payload)
 
 
 
