@@ -20,7 +20,7 @@ class MrTargetTask(DockerTask):
     run_options = luigi.Parameter(default='-h')
     mrtargetbranch = luigi.Parameter(default='master')
     mrtargetrepo = luigi.Parameter(default="eu.gcr.io/open-targets/mrtarget", significant=False)
-    date = luigi.DateParameter(default=datetime.date.today(),significant=False)
+    # date = luigi.DateParameter(default=datetime.date.today(),significant=False)
     data_version = luigi.Parameter(default=datetime.date.today().strftime("hannibal-%y.%m"))
 
     '''As we are running multiple workers, the output must be a resource that is
@@ -93,7 +93,10 @@ class MrTargetTask(DockerTask):
         """
         Returns a local Target representing the inserted dataset.
         """
-        return luigi.LocalTarget('/hannibal/%s%s.done' % (self.name,self.data_version))
+        taskid = '-'.join(['mrT', self.mrtargetbranch, 
+                         self.run_options[0].lstrip('-'),
+                         self.data_version])
+        return luigi.LocalTarget('/hannibal/%s.done' % taskid)
 
 
 
