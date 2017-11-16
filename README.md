@@ -54,16 +54,25 @@ We are passing the container tag at launch and the container gets pulled **once*
 * elasticsearch IP to point to in case you want to run without ES
 * stop the instance on its own after is done
 * on pre-emptible signal stop the machine and flush ES to disk
-* mrTarget --val should read a .ini file with the URIs of the data
+* mrTarget --val should read a .ini file **in the repo** with the URIs of the data
 * add data version
 
 ## Use cases
 
 - i want to have an API+ES up for 2-4 days while frontend develops
-- i want to run weekly for CD` 
+- i want to run weekly for CD 
 - i want to run the data pipeline for a release
 
-### CI/CD weekly flow
+### 1. i rerun the data and copy to our dev ES
+
+The script should:
+1. spin ES
+2. run master of mrTarget
+3. take a snapshot
+5. ?reindex to devES?
+6. stop ES
+
+### 2. CI/CD weekly flow
 
 The script should:
 
@@ -76,16 +85,7 @@ The script should:
 7. copy the snapshot into the main dev ES where it gets labelled with the date
 8. remove the previous weekly from the main ES and the previous snapshots (we don't care about weeklies)
 
-### i rerun the data and copy to our dev ES
-
-The script should:
-1. spin ES
-2. run master of mrTarget
-3. take a snapshot
-5. ?reindex to devES?
-6. stop ES
-
-### Release
+### 3. Release
 
 Launch with a specific tag and save a snapshot on gs://
 
@@ -123,6 +123,7 @@ luigid --logdir /mnt/hannibal-tmp/log
 ```
 
 should show you the screenshot of the visualizer.
+
 
 ### Developing
 
