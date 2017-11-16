@@ -1,9 +1,6 @@
 # Launch MrTarget on a mission
 
 How we run our data pipeline (mrTarget) with luigi and docker, on a google cloud machine.
-
-![hannibal](http://s2.quickmeme.com/img/a9/a9ed842f739e930dc8e9340bafbbaeaf77994c50c74fc6a86b046b54cb9b2c59.jpg)
-
 Automated thanks to [Luigi](https://github.com/spotify/luigi)
 
 ## TL;DR How to launch the pipeline
@@ -24,11 +21,17 @@ gcloud compute ssh --ssh-flag="-L 8082:localhost:8082"  --project=open-targets-e
 
 and then browse to: http://localhost:8082/static/visualiser/index.html
 
+![luigi dashboard](img/luigi.png)
+
 you can also see kibana:
 ```sh
 gcloud compute ssh --ssh-flag="-L 5601:localhost:5601"  --project=open-targets-eu-dev <machine name> --zone=europe-west1-d
 ```
 and then browse to: http://localhost:5601
+
+![kibana dashboard](img/kibana.png)
+
+![hannibal](http://s2.quickmeme.com/img/a9/a9ed842f739e930dc8e9340bafbbaeaf77994c50c74fc6a86b046b54cb9b2c59.jpg)
 
 
 To debug whether the init script has worked, log in:
@@ -41,8 +44,22 @@ sudo su -
 cat /var/log/daemon.log
 ```
 
+When each step it's completed a _target_ file is created in `/hannibal/status`. Delete the file and rerun luigi to rerun the step.
+```sh
+gcloud compute ssh <theinstancename>
+### ... and once you are logged in switch to root...
+sudo su -
+ls -l /hannibal/status/
+```
 
-### Architectural decision records (ie. why did i write it this way):
+## TODO
+
+* stop the instance on its own after is done
+* trigger snapshot on exit (luigi step)
+* on pre-emptible signal stop the machine and flush ES to disk
+
+
+## Architectural decision records (ie. why did i write it this way):
 
 * debian because mkarmona likes it
 * ES as docker because I am not going to **ever** deal with java and jvm
@@ -56,13 +73,7 @@ Notice that:
 We are passing the container tag at launch and the container gets pulled **once** at the beginning of the pipeline.
 
 
-## TODO
 
-* elasticsearch IP to point to in case you want to run without ES
-* stop the instance on its own after is done
-* on pre-emptible signal stop the machine and flush ES to disk
-* mrTarget --val should read a .ini file **in the repo** with the URIs of the data
-* add data version
 
 ## Use cases
 
