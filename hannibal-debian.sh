@@ -34,6 +34,14 @@ apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y docker-ce
 
 systemctl enable docker
 
+## install stackdriver logging agent 
+# as explained in https://cloud.google.com/logging/docs/agent/installation
+curl -sSO https://dl.google.com/cloudagents/install-logging-agent.sh
+bash install-logging-agent.sh
+
+
+############## shell env #####################
+
 
 ## download my dotfiles for tmux and shell niceties
 wget -O ~/.tmux.conf https://git.io/v9FuI
@@ -44,6 +52,7 @@ cat ~/.mybashrc >> ~/.bashrc
 cat <<EOF >> ~/.bashrc
 
 ### Variables I need for ES and Luigi ###
+
 ## Compute half memtotal gigs 
 # cap ES heap at 26 to safely remain under zero-base compressed oops limit
 # see: https://www.elastic.co/guide/en/elasticsearch/reference/current/heap-size.html
@@ -53,12 +62,11 @@ export ES_HEAP=\$((\$ES_MEM/2))
 ## Cap CPUs for ES to 8
 export ES_CPU=\$(nproc | awk '{if (\$NF/2 < 8) print \$NF/2; else print 8}')
 
+## read metadata
 export INSTANCE_NAME=\$(http --ignore-stdin --check-status 'http://metadata.google.internal/computeMetadata/v1/instance/name'  "Metadata-Flavor:Google" -p b --pretty none)
-
 export CONTAINER_TAG=\$(http --ignore-stdin --check-status 'http://metadata.google.internal/computeMetadata/v1/instance/attributes/container-tag'  "Metadata-Flavor:Google" -p b --pretty none)
-
-export ELASTICSEARCH=\$(http --ignore-stdin --check-status 'http://metadata.google.internal/computeMetadata/v1/instance/attributes/es-url'  "Metadata-Flavor:Google" -p b --pretty none)
-
+export ESURL=\$(http --ignore-stdin --check-status 'http://metadata.google.internal/computeMetadata/v1/instance/attributes/es-url'  "Metadata-Flavor:Google" -p b --pretty none)
+export PUBESURL=\$(http --ignore-stdin --check-status 'http://metadata.google.internal/computeMetadata/v1/instance/attributes/pub-es-url'  "Metadata-Flavor:Google" -p b --pretty none)
 export LUIGI_CONFIG_PATH=/hannibal/src/luigi.cfg
 EOF
 
@@ -76,16 +84,27 @@ export ES_CPU=$(nproc | awk '{if ($NF/2 < 8) print $NF/2; else print 8}')
 ## read metadata
 export INSTANCE_NAME=$(http --ignore-stdin --check-status 'http://metadata.google.internal/computeMetadata/v1/instance/name'  "Metadata-Flavor:Google" -p b --pretty none)
 export CONTAINER_TAG=$(http --ignore-stdin --check-status 'http://metadata.google.internal/computeMetadata/v1/instance/attributes/container-tag'  "Metadata-Flavor:Google" -p b --pretty none)
-export ELASTICSEARCH=$(http --ignore-stdin --check-status 'http://metadata.google.internal/computeMetadata/v1/instance/attributes/es-url'  "Metadata-Flavor:Google" -p b --pretty none)
+export ESURL=$(http --ignore-stdin --check-status 'http://metadata.google.internal/computeMetadata/v1/instance/attributes/es-url'  "Metadata-Flavor:Google" -p b --pretty none)
+export PUBESURL=$(http --ignore-stdin --check-status 'http://metadata.google.internal/computeMetadata/v1/instance/attributes/pub-es-url'  "Metadata-Flavor:Google" -p b --pretty none)
 export LUIGI_CONFIG_PATH=/hannibal/src/luigi.cfg
 
 
-## install stackdriver logging agent 
-# as explained in https://cloud.google.com/logging/docs/agent/installation
-curl -sSO https://dl.google.com/cloudagents/install-logging-agent.sh
-bash install-logging-agent.sh
+####################### hannibal ##########################
+mkdir /hannibal
+mkdir /hannibal/logs
+mkdir /hannibal/status
 
-if [ "$ELASTICSEARCH" = "elasticsearch" ]; then
+# clone the hannibal repo with the task definition and install python packages needed
+pip install --upgrade pip 
+git clone https://github.com/opentargets/hannibal.git /hannibal/src
+pip install -r /hannibal/src/requirements.txt
+
+## Save the ES URL into the 
+envsubst < /hannibal/src/luigi.cfg.template > /hannibal/src/luigi.cfg
+
+####################### internal elasticsearch? ##############
+
+if [ "$ESURL" = "http://elasticsearch:9200" ]; then
 
     echo "spin my own elasticsearch using docker... "
 
@@ -112,13 +131,10 @@ if [ "$ELASTICSEARCH" = "elasticsearch" ]; then
         --restart=always \
         gcr.io/open-targets-eu-dev/github-opentargets-docker-elasticsearch-singlenode:5.6
 
-        #quay.io/opentargets/docker-elasticsearch-singlenode:5.6
-        #docker.elastic.co/elasticsearch/elasticsearch:5.6.2
 
     # # NOTE: we don't have to explicity set the ulimits over files, since
     # the debian docker daemon sets acceptable ones 
     # Tested with `docker run --rm centos:7 /bin/bash -c 'ulimit -Hn && ulimit -Sn && ulimit -Hu && ulimit -Su'`
-
 
     ## Change index settings (after ES is ready)
     # # wait enough to get elasticsearch running and ready
@@ -149,22 +165,6 @@ EOF
     docker run -p 5601:5601 --network esnet -d docker.elastic.co/kibana/kibana:5.6.3
 
 fi
-
-
-
-## python 
-pip install --upgrade pip 
-pip install --upgrade elasticsearch-curator
-
-mkdir /hannibal
-mkdir /hannibal/logs
-mkdir /hannibal/status
-
-## clone the hannibal repo with the task definition and install python packages needed
-git clone https://github.com/opentargets/hannibal.git /hannibal/src
-pip install -r /hannibal/src/requirements.txt
-
-envsubst < /hannibal/src/luigi.cfg.template > /hannibal/src/luigi.cfg
 
 
 gcloud docker -- pull eu.gcr.io/open-targets/mrtarget:${CONTAINER_TAG}

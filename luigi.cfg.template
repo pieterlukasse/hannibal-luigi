@@ -29,8 +29,8 @@ unhandled_exception=40
 
 [elasticsearch]
 # the cluster passed on to the pipeline
-eshost = ${ELASTICSEARCH}
-esport = 9200
+esurl = ${ESURL}
+pubesurl = ${PUBESURL}
 
 [DEFAULT]
 # this is inherited by all tasks, but they !!MUST!! have a section below:
@@ -52,6 +52,7 @@ mrtargetrepo = eu.gcr.io/open-targets/mrtarget
 [EvidenceObjects]
 [InjectedEvidence]
 [AssociationObjects]
+[QualityControl]
 [SearchObjects]
 [Relations]
 [DataRelease]

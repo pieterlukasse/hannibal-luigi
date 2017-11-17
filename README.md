@@ -52,11 +52,15 @@ sudo su -
 ls -l /hannibal/status/
 ```
 
+
 ## TODO
 
-* stop the instance on its own after is done
-* trigger snapshot on exit (luigi step)
+* slack notifications
+* get rid of config file? and just launch with parameters?
+* stop the instance on its own after is done (delete unless --keepup)
 * on pre-emptible signal stop the machine and flush ES to disk
+* figure out inject
+* luigi as start/stop systemd service
 
 
 ## Architectural decision records (ie. why did i write it this way):
@@ -68,10 +72,7 @@ ls -l /hannibal/status/
 * we are not attaching a separate disk for simplicity - and also becuase then the disk gets deleted when we delete the instances down the line
 * ES and pipeline on the same (BIG) machine
   * 8 cores for ES, 32 for mrTarget, 52GB ram for ES/ 200GB for mrTarget
-
-Notice that:
-We are passing the container tag at launch and the container gets pulled **once** at the beginning of the pipeline.
-
+* the container gets pulled **once** at the beginning of the pipeline to avoid conflicts coming from subsequent pushes
 
 
 

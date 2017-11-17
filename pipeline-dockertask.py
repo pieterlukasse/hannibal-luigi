@@ -18,21 +18,15 @@ class MrTargetTask(DockerTask):
     '''
     run_options = luigi.Parameter(default='-h')
     mrtargetbranch = luigi.Parameter(default='master')
-    mrtargetrepo = luigi.Parameter(default="eu.gcr.io/open-targets/mrtarget", significant=False)
     # date = luigi.DateParameter(default=datetime.date.today(),significant=False)
     data_version = luigi.Parameter(default=datetime.date.today().strftime("hannibal-%y.%m"))
 
     '''As we are running multiple workers, the output must be a resource that is
        accessible by all workers, such as S3/distributedFileSys or database'''
 
-    # find which ES to point to. 
-    eshost = luigi.configuration.get_config().get('elasticsearch',
-                                                  'eshost', '127.0.0.1')
-    esport = luigi.configuration.get_config().get('elasticsearch',
-                                                  'esport', '9200')
-    esauth = luigi.configuration.get_config().get('elasticsearch',
-                                                  'esauth', None)
-    
+    mrtargetrepo = luigi.Parameter(default="eu.gcr.io/open-targets/mrtarget", significant=False)
+    esurl = luigi.Parameter(default="http://elasticsearch:9200", significant=False)
+    pubesurl = luigi.Parameter(default="http://35.189.243.117:39200", significant=False)    
 
     auto_remove = True
     force_pull = False
@@ -62,9 +56,8 @@ class MrTargetTask(DockerTask):
         ''' pass the environment variables required by the container
         '''
         return {
-            "ELASTICSEARCH_NODES": "http://" + \
-				  self.eshost + ":" + \
-				  self.esport,
+            "ELASTICSEARCH_NODES": self.esurl, 
+            "ELASTICSEARCH_NODES_PUB": self.pubesurl,
             "CTTV_DUMP_FOLDER":"/tmp/data",
             "CTTV_DATA_VERSION": self.data_version
             
@@ -182,6 +175,12 @@ class AssociationObjects(MrTargetTask):
 
     run_options = ['--as']
 
+class QualityControl(MrTargetTask):
+    
+    def requires(self):
+        return AssociationObjects()
+
+    run_options = ['--qc']
 
 class SearchObjects(MrTargetTask):
     
@@ -194,7 +193,7 @@ class SearchObjects(MrTargetTask):
 class Relations(MrTargetTask):
 
     def requires(self):
-        return AssociationObjects()
+        return QualityControl()
 
     run_options = ['--ddr']
 
