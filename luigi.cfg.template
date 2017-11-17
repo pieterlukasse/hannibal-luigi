@@ -1,0 +1,4 @@
+[luigi-monitor]
+slack_url=${PIPELINE_SLACK_URL}
+max_print=10
+username=hannibal
