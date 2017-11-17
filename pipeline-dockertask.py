@@ -198,22 +198,11 @@ class Relations(MrTargetTask):
     run_options = ['--ddr']
 
 
-class DataRelease(luigi.WrapperTask):
-    mrtargetbranch = luigi.Parameter(default='master')
-    mrtargetrepo = luigi.Parameter(default="eu.gcr.io/open-targets/mrtarget", significant=False)
-    data_version = luigi.Parameter(default=datetime.date.today().strftime("hannibal-%y.%m"))
-    def requires(self):
-        yield SearchObjects()
-        yield InjectedEvidence()
-        yield AssociationObjects()
-        yield Relations()
-
-
 class ReleaseSnapshot(luigi.Task):
     '''Build a snapshot of the release in gs://'''
-    
+    # parameters here only to identify the ID of the task
+
     mrtargetbranch = luigi.Parameter(default='master')
-    # date = luigi.DateParameter(default=datetime.date.today(),significant=False)
     data_version = luigi.Parameter(default=datetime.date.today().strftime("hannibal-%y.%m"))
 
     def output(self):
@@ -223,7 +212,7 @@ class ReleaseSnapshot(luigi.Task):
         return luigi.LocalTarget('/hannibal/status/%s.done' % taskid)
 
     def requires(self):
-        return DataRelease()
+        return Relations(), SearchObjects(), InjectedEvidence(), AssociationObjects()
 
     def run(self):
         snapurl = "127.0.0.1:9200/_snapshot/%s/%s?wait_for_completion=true" %\
