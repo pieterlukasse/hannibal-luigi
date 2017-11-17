@@ -88,7 +88,7 @@ export CONTAINER_TAG=$(http --ignore-stdin --check-status 'http://metadata.googl
 export ESURL=$(http --ignore-stdin --check-status 'http://metadata.google.internal/computeMetadata/v1/instance/attributes/es-url'  "Metadata-Flavor:Google" -p b --pretty none)
 export PUBESURL=$(http --ignore-stdin --check-status 'http://metadata.google.internal/computeMetadata/v1/instance/attributes/pub-es-url'  "Metadata-Flavor:Google" -p b --pretty none)
 
-export PIPELINE_SLACK_URL=$(http --ignore-stdin --check-status 'http://metadata.google.internal/computeMetadata/v1/instance/attributes/pipeline-slack-url'  "Metadata-Flavor:Google" -p b --pretty none)
+export PIPELINE_SLACK_URL=$(http --ignore-stdin --check-status 'http://metadata.google.internal/computeMetadata/v1/project/attributes/pipeline-slack-url'  "Metadata-Flavor:Google" -p b --pretty none)
 export LUIGI_CONFIG_PATH=/hannibal/src/luigi.cfg
 
 
@@ -176,8 +176,8 @@ luigid --background
 
 # make sure luigi runs at reboot
 cat <<EOF >/hannibal/launch_luigi.sh
-cd ./src
-PYTHONPATH="." luigi-monitor --module pipeline-dockertask ReleaseSnapshot --esurl ${ESURL} --pubesurl ${PUBESURL} --mrtargetbranch ${CONTAINER_TAG} --workers 5
+cd /hannibal/src
+PYTHONPATH="." luigi-monitor --module pipeline-dockertask ReleaseSnapshot --workers 5
 EOF
 
 
