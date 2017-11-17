@@ -2,6 +2,11 @@
 
 # ./launch-gce.sh -e conf -s /etc -l /usr/lib <container-tag> 
 
+unset ESURL
+unset PUBESURL
+unset KEEPUP
+unset CONTAINER_TAG
+
 POSITIONAL=()
 while [[ $# -gt 0 ]]
 do
@@ -51,10 +56,11 @@ if [ $# -ne 1 ]; then
     echo "Usage: $0 <container_tag> -p/--publication <ESPUBURL> -e/--elasticsearch <ES_URL>"
     exit 1
 else
+    CONTAINER_TAG="$1"
     echo "INFO - Creating a machine on gcloud named:           hannibal-$1-$DATE"
     echo "ES URL          = "${ESURL}""
     echo "PUB ES URL      = "${PUBESURL}""
-    echo "CONTAINER TAG   = "$1""
+    echo "CONTAINER TAG   = "${CONTAINER_TAG}""
 fi
 
 # substitute 
@@ -68,7 +74,7 @@ gcloud beta compute --project "open-targets-eu-dev" instances create "hannibal-$
 --machine-type "custom-40-266240" \
  --no-restart-on-failure \
  --maintenance-policy "TERMINATE" \
- --scopes default,storage-rw \
+ --scopes default,storage-rw,compute-rw \
  --min-cpu-platform "Automatic" \
  --image-project "debian-cloud" \
  --image-family debian-9 \
