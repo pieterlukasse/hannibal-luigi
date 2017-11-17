@@ -178,17 +178,36 @@ cat <<EOF >/hannibal/launch_luigi.sh
 PYTHONPATH="/hannibal/src" luigi-monitor --module pipeline-dockertask ReleaseSnapshot --workers 5
 EOF
 
-
 chmod u+x /hannibal/launch_luigi.sh
 
-# make sure the daemon and luigi process are rerun on reboot/restart of the machine.
-cat <<EOF >/etc/cron.d/luigi
-@reboot  /hannibal/launch_luigi.sh
-@reboot  /usr/local/bin/luigid --background
+cat <<EOF >/etc/systemd/system/luigi.service
+[Unit]
+AssertPathExists=/hannibal/src
+Description=hannibal and luigi
+
+[Service]
+WorkingDirectory=/hannibal
+Environment=GHOST_NODE_VERSION_CHECK=false
+ExecStart=/hannibal/launch_luigi.sh
+Restart=always
+PrivateTmp=true
+NoNewPrivileges=true
+
+[Install]
+WantedBy=default.target
+
 EOF
 
-echo launching luigi
-/hannibal/launch_luigi.sh
+systemctl enable --now luigi
+
+# # make sure the daemon and luigi process are rerun on reboot/restart of the machine.
+# cat <<EOF >/etc/cron.d/luigi
+# @reboot  /hannibal/launch_luigi.sh
+# @reboot  /usr/local/bin/luigid --background
+# EOF
+
+# echo launching luigi
+# /hannibal/launch_luigi.sh
 
 
 
