@@ -91,13 +91,9 @@ class MrTargetTask(DockerTask):
         return luigi.LocalTarget('/hannibal/status/%s.done' % taskid)
 
 
-
     def run(self):
         '''
-        extend run() of docker runner base class to touch a DB-based target.
-        Opted not to extend the base class, since a docker runner job
-        may prefer to create a local target, which does not implement a touch()
-        method.
+        extend run() of docker runner base class to touch a file target.
         '''
         DockerTask.run(self)
         self.output().open("w").close()

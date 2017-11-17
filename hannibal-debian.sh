@@ -99,8 +99,6 @@ pip install --upgrade pip
 git clone https://github.com/opentargets/hannibal.git /hannibal/src
 pip install -r /hannibal/src/requirements.txt
 
-## Save the ES URL into the 
-envsubst < /hannibal/src/luigi.cfg.template > /hannibal/src/luigi.cfg
 
 ####################### internal elasticsearch? ##############
 
@@ -173,22 +171,22 @@ gcloud docker -- pull eu.gcr.io/open-targets/mrtarget:${CONTAINER_TAG}
 luigid --background
 
 # make sure luigi runs at reboot
-cat <<EOF >/root/launch_luigi.sh
-cd /hannibal/src
-export LUIGI_CONFIG_PATH=/hannibal/src/luigi.cfg
-PYTHONPATH="." luigi --module pipeline-dockertask ReleaseSnapshot --workers 5
+cat <<EOF >/hannibal/launch_luigi.sh
+cd ./src
+PYTHONPATH="." luigi --module pipeline-dockertask ReleaseSnapshot --esurl ${ESURL} --pubesurl ${PUBESURL} --mrtargetbranch ${CONTAINER_TAG} --workers 5
 EOF
 
-chmod u+x /root/launch_luigi.sh
+
+chmod u+x /hannibal/launch_luigi.sh
 
 # make sure the daemon and luigi process are rerun on reboot/restart of the machine.
 cat <<EOF >/etc/cron.d/luigi
-@reboot  /root/launch_luigi.sh
+@reboot  /hannibal/launch_luigi.sh
 @reboot  /usr/local/bin/luigid --background
 EOF
 
 echo launching luigi
-/root/launch_luigi.sh
+/hannibal/launch_luigi.sh
 
 
 
