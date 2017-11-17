@@ -176,8 +176,7 @@ luigid --background
 
 # make sure luigi runs at reboot
 cat <<EOF >/hannibal/launch_luigi.sh
-cd /hannibal/src
-PYTHONPATH="." luigi-monitor --module pipeline-dockertask ReleaseSnapshot --workers 5
+PYTHONPATH="/hannibal/src" luigi-monitor --module pipeline-dockertask ReleaseSnapshot --workers 5
 EOF
 
 

@@ -26,7 +26,7 @@ class MrTargetTask(DockerTask):
 
     mrtargetrepo = luigi.Parameter(default="eu.gcr.io/open-targets/mrtarget", significant=False)
     esurl = luigi.Parameter(default="http://elasticsearch:9200", significant=False)
-    pubesurl = luigi.Parameter(default="http://35.189.243.117:39200", significant=False)    
+    pubesurl = luigi.Parameter(default="http://pubes:39200", significant=False)    
 
     auto_remove = True
     force_pull = False
@@ -215,6 +215,12 @@ class ReleaseSnapshot(luigi.Task):
         requests.put(snapurl,data = payload)
 
 
+class ReleaseAndSelfDestruct(luigi.Task):
+    ''' run 
+            gcloud compute instances delete $(hostname) --quiet
+        in a shell
+    '''
+    pass
 
 
 def main():
