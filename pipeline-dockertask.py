@@ -1,5 +1,6 @@
 import logging
 import datetime
+import time
 import os
 import luigi
 import requests
@@ -216,11 +217,30 @@ class ReleaseSnapshot(luigi.Task):
 
 
 class ReleaseAndSelfDestruct(luigi.Task):
-    ''' run 
-            gcloud compute instances delete $(hostname) --quiet
+    ''' TODO: self-destruct the instance
+        implement 
+
+
+            subprocess.pgcloud compute instances delete $(hostname) --quiet
         in a shell
     '''
-    pass
+
+    def requires(self):
+        return ReleaseSnapshot()
+
+    def run(self):
+        snapurl = "%s/_snapshot/%s/%s" %\
+                     (self.esurl,
+                     os.getenv('INSTANCE_NAME'),
+                     datetime.date.today().strftime("%y%m%d-%h%M"))
+        
+        while True:  
+            time.sleep(10)
+            r = requests.get(snapurl)
+            if r.json()['snapshots'][0]['state'] == "SUCCESS":
+                break
+
+        subprocess.Popen('gcloud compute instances delete $(hostname) --quiet', shell=True)
 
 
 def main():

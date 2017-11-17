@@ -48,4 +48,5 @@ mrtargetrepo = eu.gcr.io/open-targets/mrtarget
 [Relations]
 [DataRelease]
 [ReleaseSnapshot]
+[ReleaseAndSelfDestruct]
 

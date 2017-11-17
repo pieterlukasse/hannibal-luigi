@@ -145,9 +145,6 @@ if [ "$ESURL" = "http://elasticsearch:9200" ]; then
         sleep 5
     done
 
-    echo '{"index":{"number_of_replicas":0}}' | http PUT :9200/_settings
-
-
     echo configure gcs snapshot plugin repository
     cat <<EOF > /root/snapshot_gcs.json
 {
@@ -165,6 +162,8 @@ EOF
 
     echo start kibana in the background
     docker run -p 5601:5601 --network esnet -d docker.elastic.co/kibana/kibana:5.6.3
+
+    echo '{"index":{"number_of_replicas":0}}' | http PUT :9200/_settings
 
 fi
 
@@ -190,11 +189,6 @@ EOF
 
 echo launching luigi
 /hannibal/launch_luigi.sh
-
-
-
-
-
 
 
 
