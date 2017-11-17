@@ -17,7 +17,7 @@ class MrTargetTask(DockerTask):
         - relies on the local /tmp folder to store data for each docker run
     '''
     run_options = luigi.Parameter(default='-h')
-    mrtargetbranch = luigi.Parameter(default='master')
+    mrtargetbranch = luigi.Parameter(default='master',significant=False)
     # date = luigi.DateParameter(default=datetime.date.today(),significant=False)
     data_version = luigi.Parameter(default=datetime.date.today().strftime("hannibal-%y.%m"))
 
@@ -155,15 +155,6 @@ class EvidenceObjects(MrTargetTask):
     run_options = ['--evs']
 
 
-class InjectedEvidence(MrTargetTask):
-    '''not required by the association step, but required by the release
-    '''
-    def requires(self):
-        return EvidenceObjects()
-
-    run_options = ['--evs', '--inject_literature']
-
-
 class AssociationObjects(MrTargetTask):
     '''the famous ass method'''
     def requires(self):
@@ -198,8 +189,9 @@ class ReleaseSnapshot(luigi.Task):
     '''Build a snapshot of the release in gs://'''
     # parameters here only to identify the ID of the task
 
-    mrtargetbranch = luigi.Parameter(default='master')
+    mrtargetbranch = luigi.Parameter(default='master',significant=False)
     data_version = luigi.Parameter(default=datetime.date.today().strftime("hannibal-%y.%m"))
+    esurl = luigi.Parameter(default="http://elasticsearch:9200", significant=False)
 
     def output(self):
         taskid = '-'.join(['mrT', self.mrtargetbranch, 
@@ -208,11 +200,12 @@ class ReleaseSnapshot(luigi.Task):
         return luigi.LocalTarget('/hannibal/status/%s.done' % taskid)
 
     def requires(self):
-        return Relations(), SearchObjects(), InjectedEvidence(), AssociationObjects()
+        return Relations(), SearchObjects(), EvidenceObjects(), AssociationObjects()
 
     def run(self):
-        snapurl = "127.0.0.1:9200/_snapshot/%s/%s?wait_for_completion=true" %\
-                     (os.getenv('INSTANCE_NAME'),
+        snapurl = "%s/_snapshot/%s/%s?wait_for_completion=true" %\
+                     (self.esurl,
+                     os.getenv('INSTANCE_NAME'),
                      datetime.date.today().strftime("%y%m%d-%h%M"))
         
         payload = { "indices": self.data_version + '*',

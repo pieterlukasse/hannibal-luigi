@@ -1,4 +1,51 @@
+# scheduler options first
+
+[core]
+logging_conf_file=hannibal_logging.cfg
+
 [luigi-monitor]
 slack_url=${PIPELINE_SLACK_URL}
 max_print=10
 username=hannibal
+
+# We will branch the data_pipeline for each release (eg. mar_2017)
+# and use that branch in the config.
+
+
+[DEFAULT]
+# Specifying parameter values here in the config file has the added benefit
+# that it becomes possible to specify the parameters only on the classes
+# that actually use the parameters. This avoids long command-line calls
+# such as: 
+# luigi --module opentargETL GeneData --date 2017-03-15 --OpenTargETLTask-date 2017-03-15
+# where you need to specify the parameter for each task in the dependency graph
+
+# an alternative approach is to use @inherits and @requires defined in luigi.util
+# http://luigi.readthedocs.io/en/stable/api/luigi.util.html
+
+esurl = ${ESURL}
+pubesurl = ${PUBESURL}
+mrtargetbranch = ${CONTAINER_TAG}
+mrtargetrepo = eu.gcr.io/open-targets/mrtarget
+
+# the above are inherited by all tasks, but they !!MUST!! have a section below:
+[DryRun]
+[UniProt]
+[Ensembl]
+[Expression]
+[Reactome]
+[HumanPhenotype]
+[MammalianPhenotype]
+[GeneData]
+[EFO]
+[ECO]
+[Validate]
+[EvidenceObjects]
+[InjectedEvidence]
+[AssociationObjects]
+[QualityControl]
+[SearchObjects]
+[Relations]
+[DataRelease]
+[ReleaseSnapshot]
+
