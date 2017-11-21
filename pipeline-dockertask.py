@@ -5,6 +5,7 @@ import os
 import luigi
 import requests
 import uuid
+from slacker import Slacker
 from luigi.contrib.docker_runner import DockerTask
 logger = logging.getLogger('luigi-interface')
 
@@ -241,6 +242,39 @@ class ReleaseAndSelfDestruct(luigi.Task):
                 break
 
         subprocess.Popen('gcloud compute instances delete $(hostname) --quiet', shell=True)
+
+
+@luigi.Task.event_handler(luigi.Event.SUCCESS)
+@MrTargetTask.event_handler(luigi.Event.SUCCESS)
+def celebrate_success(task):
+    """will be called after success
+    """
+    token = os.environ['SLACK_TOKEN']
+    slack = Slacker(token)
+    msg = 'step {0} succeeded ({1}, branch: {2})'.format(task.run_options, 
+                                                         os.environ['INSTANCE_NAME'],
+                                                         os.environ['CONTAINER_TAG'])
+    
+    obj = slack.chat.post_message(channel='@eliseo',text=msg)
+    logger.debug('slack callback:' + msg)
+    return obj.successful
+
+
+@luigi.Task.event_handler(luigi.Event.FAILURE)
+@MrTargetTask.event_handler(luigi.Event.FAILURE)
+def mourn_failure(task, exception):
+    """Will be called directly after a failed execution
+    """
+    token = os.environ['SLACK_TOKEN']
+    slack = Slacker(token)
+    msg = 'step {0} failed ({1}, branch: {2})'.format(task.run_options, 
+                                                         os.environ['INSTANCE_NAME'],
+                                                         os.environ['CONTAINER_TAG'])
+    
+    obj = slack.chat.post_message(channel='@eliseo',text=msg)
+    return obj.successful
+
+
 
 
 def main():
