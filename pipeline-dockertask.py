@@ -251,7 +251,7 @@ def celebrate_success(task):
     """
     token = os.environ['SLACK_TOKEN']
     slack = Slacker(token)
-    msg = 'step {0} succeeded ({1}, branch: {2})'.format(task.run_options, 
+    msg = 'step {0} succeeded ({1}, branch: {2})'.format(task, 
                                                          os.environ['INSTANCE_NAME'],
                                                          os.environ['CONTAINER_TAG'])
     
@@ -267,9 +267,9 @@ def mourn_failure(task, exception):
     """
     token = os.environ['SLACK_TOKEN']
     slack = Slacker(token)
-    msg = 'step {0} failed ({1}, branch: {2})'.format(task.run_options, 
-                                                         os.environ['INSTANCE_NAME'],
-                                                         os.environ['CONTAINER_TAG'])
+    msg = 'step {0} failed ({1}, branch: {2})'.format(task, 
+                                                      os.environ['INSTANCE_NAME'],
+                                                      os.environ['CONTAINER_TAG'])
     
     obj = slack.chat.post_message(channel='@eliseo',text=msg)
     return obj.successful
