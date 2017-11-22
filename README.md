@@ -155,8 +155,6 @@ SSHFS reads from the ~/.ssh/config file, so create one using `gcloud compute con
 Then try to connect
 
 ```sh
-sshfs -o auto_cache,reconnect,defer_permissions,noappledouble,negative_vncache,volname=hannibal 
-
 sudo mkdir /mnt/gce
 sudo chown <user> /mnt/gce
 
