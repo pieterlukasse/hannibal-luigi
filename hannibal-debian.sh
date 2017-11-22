@@ -72,23 +72,8 @@ export LUIGI_CONFIG_PATH=/hannibal/src/luigi.cfg
 EOF
 
 echo "export variables"
-# NOTE I am also declaring the variables here, because .bashrc is not sourced during startup-script
-
-## Compute half memtotal gigs 
-# cap ES heap at 26 to safely remain under zero-base compressed oops limit
-# see: https://www.elastic.co/guide/en/elasticsearch/reference/current/heap-size.html
-export ES_MEM=$(awk '/MemTotal/ {half=$2/1024/2; if (half > 52*1024) printf 52*1024; else printf "%d", half}' /proc/meminfo)
-export ES_HEAP=$(($ES_MEM/2))
-## Cap CPUs for ES to 8
-export ES_CPU=$(nproc | awk '{if ($NF/2 < 8) print $NF/2; else print 8}')
-
-## read metadata
-export INSTANCE_NAME=$(http --ignore-stdin --check-status 'http://metadata.google.internal/computeMetadata/v1/instance/name'  "Metadata-Flavor:Google" -p b --pretty none)
-export CONTAINER_TAG=$(http --ignore-stdin --check-status 'http://metadata.google.internal/computeMetadata/v1/instance/attributes/container-tag'  "Metadata-Flavor:Google" -p b --pretty none)
-export ESURL=$(http --ignore-stdin --check-status 'http://metadata.google.internal/computeMetadata/v1/instance/attributes/es-url'  "Metadata-Flavor:Google" -p b --pretty none)
-export PUBESURL=$(http --ignore-stdin --check-status 'http://metadata.google.internal/computeMetadata/v1/instance/attributes/pub-es-url'  "Metadata-Flavor:Google" -p b --pretty none)
-export SLACK_TOKEN=$(http --ignore-stdin --check-status 'http://metadata.google.internal/computeMetadata/v1/project/attributes/slack-token'  "Metadata-Flavor:Google" -p b --pretty none)
-export LUIGI_CONFIG_PATH=/hannibal/src/luigi.cfg
+# NOTE I am also sourcing bashrc variables here, because .bashrc is not sourced during startup-script
+source /root/.bashrc
 
 
 ####################### hannibal ##########################
@@ -177,6 +162,7 @@ luigid --background
 # make sure luigi runs at reboot
 cat <<EOF >/hannibal/launch_luigi.sh
 #!/usr/bin/env bash
+source /root/.bashrc
 PYTHONPATH="/hannibal/src" luigi-monitor --module pipeline-dockertask ReleaseSnapshot --workers 5
 EOF
 
@@ -188,6 +174,7 @@ AssertPathExists=/hannibal/src
 Description=hannibal and luigi
 
 [Service]
+EnvironmentFile=/etc/luigi-environment
 WorkingDirectory=/hannibal
 ExecStart=/hannibal/launch_luigi.sh
 Restart=always
