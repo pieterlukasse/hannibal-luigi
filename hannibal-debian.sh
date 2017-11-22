@@ -176,6 +176,7 @@ luigid --background
 
 # make sure luigi runs at reboot
 cat <<EOF >/hannibal/launch_luigi.sh
+#!/usr/bin/env bash
 PYTHONPATH="/hannibal/src" luigi-monitor --module pipeline-dockertask ReleaseSnapshot --workers 5
 EOF
 
@@ -188,7 +189,6 @@ Description=hannibal and luigi
 
 [Service]
 WorkingDirectory=/hannibal
-Environment=GHOST_NODE_VERSION_CHECK=false
 ExecStart=/hannibal/launch_luigi.sh
 Restart=always
 PrivateTmp=true
