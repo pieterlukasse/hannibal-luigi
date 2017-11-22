@@ -52,12 +52,12 @@ fi
 DATE=$(date +"%m%d-%H%M")
 
 if [ $# -ne 1 ]; then
-    echo "ERROR - container tag (ie. a github branch or github tag) must be specified"
-    echo "Usage: $0 <container_tag> -p/--publication <ESPUBURL> -e/--elasticsearch <ES_URL>"
+    echo -e "\nERROR - container tag (ie. a github branch or github tag) must be specified"
+    echo -e "\nUsage: $0 <container_tag> -p/--publication <ESPUBURL> -e/--elasticsearch <ES_URL>"
     exit 1
 else
     CONTAINER_TAG="$1"
-    echo "INFO - Creating a machine on gcloud named:           hannibal-$1-$DATE"
+    echo -e "\nINFO - Creating a machine on gcloud named:           hannibal-$1-$DATE"
     echo "ES URL          = "${ESURL}""
     echo "PUB ES URL      = "${PUBESURL}""
     echo "CONTAINER TAG   = "${CONTAINER_TAG}""
