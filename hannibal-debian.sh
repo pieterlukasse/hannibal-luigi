@@ -103,6 +103,8 @@ pip install -r /hannibal/src/requirements.txt
 
 envsubst < /hannibal/src/luigi.cfg.template > /hannibal/src/luigi.cfg
 
+chown -R root:google-sudoers /hannibal
+
 ####################### internal elasticsearch? ##############
 
 if [ "$ESURL" = "http://elasticsearch:9200" ]; then
