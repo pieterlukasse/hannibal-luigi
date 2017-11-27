@@ -174,7 +174,6 @@ AssertPathExists=/hannibal/src
 Description=hannibal and luigi
 
 [Service]
-EnvironmentFile=/etc/luigi-environment
 WorkingDirectory=/hannibal
 ExecStart=/hannibal/launch_luigi.sh
 Restart=always
