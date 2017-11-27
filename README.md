@@ -63,13 +63,6 @@ ls -l /hannibal/status/
 
 
 
-
-## TODO
-
-* implement "delete unless --keepup option"
-* on pre-emptible signal stop luigi service and flush ES to disk
-
-
 ## Architectural decision records (ie. why did i write it this way):
 
 * debian because mkarmona likes it
