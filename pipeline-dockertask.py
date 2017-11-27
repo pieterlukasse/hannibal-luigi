@@ -255,7 +255,7 @@ def celebrate_success(task):
                                                          os.environ['INSTANCE_NAME'],
                                                          os.environ['CONTAINER_TAG'])
     
-    obj = slack.chat.post_message(channel='@eliseo',text=msg)
+    obj = slack.chat.post_message(channel='#notifications',text=msg)
     logger.debug('slack callback:' + msg)
     return obj.successful
 
@@ -271,7 +271,7 @@ def mourn_failure(task, exception):
                                                       os.environ['INSTANCE_NAME'],
                                                       os.environ['CONTAINER_TAG'])
     
-    obj = slack.chat.post_message(channel='@eliseo',text=msg)
+    obj = slack.chat.post_message(channel='#notifications',text=msg)
     return obj.successful
 
 
