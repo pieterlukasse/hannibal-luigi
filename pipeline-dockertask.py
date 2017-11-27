@@ -244,7 +244,7 @@ class ReleaseAndSelfDestruct(luigi.Task):
         if os.getenv('KEEPUP') == "NO":
             subprocess.Popen('gcloud compute instances delete $(hostname) --quiet', shell=True)
             return
-        else
+        else:
             return
 
 
