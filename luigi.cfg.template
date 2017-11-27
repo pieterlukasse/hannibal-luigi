@@ -1,7 +1,7 @@
 # scheduler options first
 
 [core]
-logging_conf_file=hannibal_logging.cfg
+logging_conf_file=/hannibal/src/hannibal_logging.cfg
 
 [luigi-monitor]
 slack_url=${PIPELINE_SLACK_URL}

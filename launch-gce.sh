@@ -45,8 +45,8 @@ if [ -z "$ESURL" ]; then
 fi
 
 if [ -z "$PUBESURL" ]; then
-    echo "WARNING - using default publication elasticsearch ip"
     PUBESURL=http://35.189.243.117:39200
+    echo "WARNING - using default publication elasticsearch ip $PUBESURL"
 fi
 
 DATE=$(date +"%m%d-%H%M")
