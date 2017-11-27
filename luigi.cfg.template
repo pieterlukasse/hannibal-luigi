@@ -3,10 +3,6 @@
 [core]
 logging_conf_file=/hannibal/src/hannibal_logging.cfg
 
-[luigi-monitor]
-slack_url=${PIPELINE_SLACK_URL}
-max_print=10
-username=hannibal
 
 # We will branch the data_pipeline for each release (eg. mar_2017)
 # and use that branch in the config.

@@ -163,7 +163,7 @@ luigid --background
 cat <<EOF >/hannibal/launch_luigi.sh
 #!/usr/bin/env bash
 source /root/.bashrc
-PYTHONPATH="/hannibal/src" luigi-monitor --module pipeline-dockertask ReleaseSnapshot --workers 5
+PYTHONPATH="/hannibal/src" luigi --module pipeline-dockertask ReleaseSnapshot --workers 5
 EOF
 
 chmod u+x /hannibal/launch_luigi.sh

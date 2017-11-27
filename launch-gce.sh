@@ -36,7 +36,7 @@ done
 set -- "${POSITIONAL[@]}" # restore positional parameters
 
 if [ -n "$KEEPUP" ]; then
-    echo "WARNING - The machine will *not* be deleted after completion"
+    echo "INFO - keepup option toggled. The machine will *not* be deleted after completion"
 fi
 
 if [ -z "$ESURL" ]; then

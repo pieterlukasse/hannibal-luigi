@@ -13,5 +13,4 @@ tornado==4.4.2
 websocket-client==0.40.0
 elasticsearch
 sqlalchemy
-luigi-monitor
 slacker
