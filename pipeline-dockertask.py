@@ -245,7 +245,7 @@ class ReleaseAndSelfDestruct(luigi.Task):
 
 
 @luigi.Task.event_handler(luigi.Event.SUCCESS)
-@MrTargetTask.event_handler(luigi.Event.SUCCESS)
+# @MrTargetTask.event_handler(luigi.Event.SUCCESS)
 def celebrate_success(task):
     """will be called after success
     """
@@ -261,7 +261,7 @@ def celebrate_success(task):
 
 
 @luigi.Task.event_handler(luigi.Event.FAILURE)
-@MrTargetTask.event_handler(luigi.Event.FAILURE)
+# @MrTargetTask.event_handler(luigi.Event.FAILURE)
 def mourn_failure(task, exception):
     """Will be called directly after a failed execution
     """
