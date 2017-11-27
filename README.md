@@ -31,7 +31,16 @@ and then browse to: http://localhost:5601
 
 ![kibana dashboard](img/kibana.png)
 
+
+You will also get a slack notification in the `#notification` channel for each step, telling you if it worked or not:
+
+![slack](img/slack.png)
+
+The final step in the pipeline is to save a snapshot of the data in the `ot-snapshots` google bucket.
+
 ![hannibal](http://s2.quickmeme.com/img/a9/a9ed842f739e930dc8e9340bafbbaeaf77994c50c74fc6a86b046b54cb9b2c59.jpg)
+
+**problems?**
 
 
 To debug whether the init script has worked, log in:
@@ -53,14 +62,12 @@ ls -l /hannibal/status/
 ```
 
 
+
+
 ## TODO
 
-* slack notifications
-* get rid of config file? and just launch with parameters?
-* stop the instance on its own after is done (delete unless --keepup)
-* on pre-emptible signal stop the machine and flush ES to disk
-* figure out inject
-* luigi as start/stop systemd service
+* implement "delete unless --keepup option"
+* on pre-emptible signal stop luigi service and flush ES to disk
 
 
 ## Architectural decision records (ie. why did i write it this way):
