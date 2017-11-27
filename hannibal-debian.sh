@@ -68,6 +68,7 @@ export CONTAINER_TAG=\$(http --ignore-stdin --check-status 'http://metadata.goog
 export ESURL=\$(http --ignore-stdin --check-status 'http://metadata.google.internal/computeMetadata/v1/instance/attributes/es-url'  "Metadata-Flavor:Google" -p b --pretty none)
 export PUBESURL=\$(http --ignore-stdin --check-status 'http://metadata.google.internal/computeMetadata/v1/instance/attributes/pub-es-url'  "Metadata-Flavor:Google" -p b --pretty none)
 export SLACK_TOKEN=\$(http --ignore-stdin --check-status 'http://metadata.google.internal/computeMetadata/v1/project/attributes/slack-token'  "Metadata-Flavor:Google" -p b --pretty none)
+export KEEPUP=\$(http --ignore-stdin --check-status 'http://metadata.google.internal/computeMetadata/v1/instance/attributes/keepup'  "Metadata-Flavor:Google" -p b --pretty none)
 export LUIGI_CONFIG_PATH=/hannibal/src/luigi.cfg
 EOF
 
@@ -163,7 +164,7 @@ luigid --background
 cat <<EOF >/hannibal/launch_luigi.sh
 #!/usr/bin/env bash
 source /root/.bashrc
-PYTHONPATH="/hannibal/src" luigi --module pipeline-dockertask ReleaseSnapshot --workers 5
+PYTHONPATH="/hannibal/src" luigi --module pipeline-dockertask ReleaseAndSelfDestruct --workers 5
 EOF
 
 chmod u+x /hannibal/launch_luigi.sh
@@ -187,18 +188,3 @@ EOF
 
 systemctl enable --now luigi
 
-# # make sure the daemon and luigi process are rerun on reboot/restart of the machine.
-# cat <<EOF >/etc/cron.d/luigi
-# @reboot  /hannibal/launch_luigi.sh
-# @reboot  /usr/local/bin/luigid --background
-# EOF
-
-# echo launching luigi
-# /hannibal/launch_luigi.sh
-
-
-
-# TODO:
-# * make sure it runs 
-# * es as service ?rc.d 
-# * luigi scheduler as a service/cron?

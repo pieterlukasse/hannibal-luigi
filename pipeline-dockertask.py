@@ -241,7 +241,11 @@ class ReleaseAndSelfDestruct(luigi.Task):
             if r.json()['snapshots'][0]['state'] == "SUCCESS":
                 break
 
-        subprocess.Popen('gcloud compute instances delete $(hostname) --quiet', shell=True)
+        if os.getenv('KEEPUP') == "NO":
+            subprocess.Popen('gcloud compute instances delete $(hostname) --quiet', shell=True)
+            return
+        else
+            return
 
 
 @luigi.Task.event_handler(luigi.Event.SUCCESS)
