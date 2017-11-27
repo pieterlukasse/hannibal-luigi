@@ -84,7 +84,7 @@ gcloud beta compute --project "open-targets-eu-dev" instances create "hannibal-$
  --boot-disk-type "pd-ssd" \
  --boot-disk-device-name "hannibal-$CONTAINER_TAG-$DATE" \
  --metadata-from-file startup-script=hannibal-debian.sh,shutdown-script=shutdown.sh\
- --metadata "container-tag=$CONTAINER_TAG","es-url=$ESURL","pub-es-url=$PUBESURL","KEEPUP=$KEEPUP" \
+ --metadata "container-tag=$CONTAINER_TAG","es-url=$ESURL","pub-es-url=$PUBESURL","keepup=$KEEPUP" \
  --labels app=hannibal \
  --preemptible
 
