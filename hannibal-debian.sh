@@ -177,7 +177,7 @@ Description=hannibal and luigi
 [Service]
 WorkingDirectory=/hannibal
 ExecStart=/hannibal/launch_luigi.sh
-Restart=always
+Restart=on-abnormal
 RestartSec=30
 PrivateTmp=true
 NoNewPrivileges=true
