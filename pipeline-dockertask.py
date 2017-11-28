@@ -2,6 +2,7 @@ import logging
 import datetime
 import time
 import os
+import json
 import luigi
 import requests
 import uuid
@@ -208,13 +209,19 @@ class ReleaseSnapshot(luigi.Task):
         snapurl = "%s/_snapshot/%s/%s?wait_for_completion=true" %\
                      (self.esurl,
                      os.getenv('INSTANCE_NAME'),
-                     datetime.date.today().strftime("%y%m%d-%h%M"))
+                     datetime.datetime.today().strftime("%y%m%d-%H%M"))
         
         payload = { "indices": self.data_version + '*',
                     "ignore_unavailable": "true", 
                     "include_global_state": "false"}
 
-        requests.put(snapurl,data = payload)
+        r = requests.put(snapurl,data = json.dumps(payload))
+        logger.debug(snapurl)
+        logger.debug(json.dumps(payload))
+        logger.debug(r.status_code)
+        
+        r.raise_for_status()
+        self.output().open("w").close()
 
 
 class ReleaseAndSelfDestruct(luigi.Task):
