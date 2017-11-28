@@ -178,6 +178,7 @@ Description=hannibal and luigi
 WorkingDirectory=/hannibal
 ExecStart=/hannibal/launch_luigi.sh
 Restart=always
+RestartSec=30
 PrivateTmp=true
 NoNewPrivileges=true
 
