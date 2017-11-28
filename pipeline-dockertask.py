@@ -219,7 +219,7 @@ class ReleaseSnapshot(luigi.Task):
         logger.debug(snapurl)
         logger.debug(json.dumps(payload))
         logger.debug(r.status_code)
-        
+
         r.raise_for_status()
         self.output().open("w").close()
 
@@ -228,10 +228,15 @@ class ReleaseAndSelfDestruct(luigi.Task):
     ''' TODO: self-destruct the instance
         implement 
 
-
             subprocess.pgcloud compute instances delete $(hostname) --quiet
         in a shell
     '''
+
+    def output(self):
+        taskid = '-'.join(['mrT', self.mrtargetbranch, 
+                         'kamikaze',
+                         self.data_version])
+        return luigi.LocalTarget('/hannibal/status/%s.done' % taskid)
 
     def requires(self):
         return ReleaseSnapshot()
@@ -240,19 +245,20 @@ class ReleaseAndSelfDestruct(luigi.Task):
         snapurl = "%s/_snapshot/%s/%s" %\
                      (self.esurl,
                      os.getenv('INSTANCE_NAME'),
-                     datetime.date.today().strftime("%y%m%d-%h%M"))
+                     datetime.datetime.today().strftime("%y%m%d-%H%M"))
         
         while True:  
-            time.sleep(10)
+            time.sleep(5)
             r = requests.get(snapurl)
             if r.json()['snapshots'][0]['state'] == "SUCCESS":
                 break
 
         if os.getenv('KEEPUP') == "NO":
-            subprocess.Popen('gcloud compute instances delete $(hostname) --quiet', shell=True)
-            return
+            subprocess.Popen('gcloud compute instances delete $(hostname) --quiet --zone=europe-west1-d', shell=True)
+            self.output().open("w").close()
         else:
-            return
+            raise SystemExit
+
 
 
 @luigi.Task.event_handler(luigi.Event.SUCCESS)
