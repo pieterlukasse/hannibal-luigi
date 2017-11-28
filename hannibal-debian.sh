@@ -45,7 +45,7 @@ bash install-logging-agent.sh
 
 ## download my dotfiles for tmux and shell niceties
 wget -O ~/.tmux.conf https://git.io/v9FuI
-wget -O ~/.mybashrc https://git.io/vF1Pr
+wget -O ~/.mybashrc https://git.io/vbJQT
 cat ~/.mybashrc >> ~/.bashrc
 
 ## add variables needed for ES and luigi
@@ -94,6 +94,9 @@ chown -R root:google-sudoers /hannibal
 ####################### internal elasticsearch? ##############
 
 if [ "$ESURL" = "http://elasticsearch:9200" ]; then
+
+    echo "map elasticsearch DNS to localhost"
+    echo "127.0.0.1 elasticsearch" >> /etc/hosts
 
     echo "spin my own elasticsearch using docker... "
 
