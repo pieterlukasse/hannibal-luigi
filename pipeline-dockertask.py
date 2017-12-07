@@ -231,6 +231,8 @@ class ReleaseAndSelfDestruct(luigi.Task):
             subprocess.pgcloud compute instances delete $(hostname) --quiet
         in a shell
     '''
+    mrtargetbranch = luigi.Parameter(default='master',significant=False)
+    data_version = luigi.Parameter(default=datetime.date.today().strftime("hannibal-%y.%m"))
 
     def output(self):
         taskid = '-'.join(['mrT', self.mrtargetbranch, 
