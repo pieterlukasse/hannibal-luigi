@@ -82,7 +82,7 @@ class MrTargetTask(DockerTask):
 
     @property
     def command(self):
-        return ' '.join(['mrtarget'] + self.run_options + '--log-level DEBUG')
+        return ' '.join(['mrtarget'] + self.run_options + ['--log-level', 'DEBUG'])
 
     def output(self):
         """
