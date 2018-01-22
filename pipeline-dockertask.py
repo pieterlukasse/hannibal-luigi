@@ -41,18 +41,18 @@ class MrTargetTask(DockerTask):
         logger.debug(opts)
         return {'networking_config':opts}
 
-    @property
-    def binds(self):
-        logfile = '/hannibal/logs/mrtarget_' + self.run_options[0].strip('-') + '.log'
-        # datadir = '/hannibal/data'
-        #      
-        # if not os.path.exists(datadir):
-        #     os.makedirs(datadir)
+    # @property
+    # def binds(self):
+    #     logfile = '/hannibal/logs/mrtarget_' + self.run_options[0].strip('-') + '.log'
+    #     # datadir = '/hannibal/data'
+    #     #      
+    #     # if not os.path.exists(datadir):
+    #     #     os.makedirs(datadir)
 
-        with open(os.path.expanduser(logfile), 'a'):
-            os.utime(os.path.expanduser(logfile), None)
+    #     with open(os.path.expanduser(logfile), 'a'):
+    #         os.utime(os.path.expanduser(logfile), None)
 
-        return [os.path.expanduser(logfile) + ':/usr/src/app/output.log']
+    #     return [os.path.expanduser(logfile) + ':/usr/src/app/output.log']
     
     @property
     def environment(self):

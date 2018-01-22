@@ -32,6 +32,13 @@ add-apt-repository \
 
 apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y docker-ce
 
+cat <<EOF >> /etc/docker/daemon.json
+{
+  "log-driver": "syslog"
+}
+EOF
+
+
 systemctl enable docker
 
 ## install stackdriver logging agent 
