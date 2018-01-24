@@ -262,15 +262,16 @@ class ReleaseAndSelfDestruct(luigi.Task):
             raise SystemExit
 
 
-
-@luigi.Task.event_handler(luigi.Event.SUCCESS)
+@luigi.Task.event_handler(luigi.Event.PROCESSING_TIME)
+# @luigi.Task.event_handler(luigi.Event.SUCCESS)
 # @MrTargetTask.event_handler(luigi.Event.SUCCESS)
-def celebrate_success(task):
+def celebrate_success(task,processing_time):
     """will be called after success
     """
     token = os.environ['SLACK_TOKEN']
     slack = Slacker(token)
-    msg = 'step {0} succeeded ({1}, branch: {2})'.format(task, 
+    msg = 'step {0} completed :white_check_mark: in {1} ({2}, branch: {3})'.format(task,
+                                                         processing_time,    
                                                          os.environ['INSTANCE_NAME'],
                                                          os.environ['CONTAINER_TAG'])
     
@@ -286,7 +287,7 @@ def mourn_failure(task, exception):
     """
     token = os.environ['SLACK_TOKEN']
     slack = Slacker(token)
-    msg = 'step {0} failed ({1}, branch: {2})'.format(task, 
+    msg = 'step {0} failed :x: ({1}, branch: {2})'.format(task, 
                                                       os.environ['INSTANCE_NAME'],
                                                       os.environ['CONTAINER_TAG'])
     
