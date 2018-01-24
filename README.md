@@ -8,26 +8,26 @@ Automated thanks to [Luigi](https://github.com/spotify/luigi)
 Authenticate to google cloud (see the [quickstart guides](https://cloud.google.com/sdk/docs/quickstarts) ) and press go!:
 
 ```sh
+git clone https://github.com/opentargets/hannibal-luigi.git
+cd hannibal-luigi
 ./launch_gce.sh <container_tag>
 ```
+
+where the container_tag is usually the github branch name of mrTarget that you are working on.
 
 The DAG that connects the pipeline steps is defined in `pipeline-dockertask.py`
 
 You can monitor the scheduler status by forwarding port 8082, for eg:
 
 ```sh
-gcloud compute ssh --ssh-flag="-L 8082:localhost:8082"  --project=open-targets-eu-dev <machine name> --zone=europe-west1-d
+gcloud compute ssh --ssh-flag="-L 8082:localhost:8082 -L 5601:localhost:5601"  --project=open-targets-eu-dev <machine name> --zone=europe-west1-d
 ```
 
 and then browse to: http://localhost:8082/static/visualiser/index.html
 
 ![luigi dashboard](img/luigi.png)
 
-you can also see kibana:
-```sh
-gcloud compute ssh --ssh-flag="-L 5601:localhost:5601"  --project=open-targets-eu-dev <machine name> --zone=europe-west1-d
-```
-and then browse to: http://localhost:5601
+you can also see kibana: http://localhost:5601
 
 ![kibana dashboard](img/kibana.png)
 

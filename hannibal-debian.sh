@@ -30,6 +30,7 @@ add-apt-repository \
    $(lsb_release -cs) \
    stable"
 
+mkdir /etc/docker
 cat <<EOF >> /etc/docker/daemon.json
 {
   "log-driver": "syslog"
