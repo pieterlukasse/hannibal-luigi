@@ -40,8 +40,11 @@ The final step in the pipeline is to save a snapshot of the data in the `ot-snap
 
 ![hannibal](http://s2.quickmeme.com/img/a9/a9ed842f739e930dc8e9340bafbbaeaf77994c50c74fc6a86b046b54cb9b2c59.jpg)
 
-**problems?**
 
+## Problems?
+
+If some steps of the pipeline fail on hannibal, **you should first test if they can run locally**. 
+That said you can investigate a bit more by logging into the VM before you shut it down.
 
 To debug whether the init script has worked, log in:
 
@@ -61,6 +64,20 @@ sudo su -
 ls -l /hannibal/status/
 ```
 
+To see the status of the luigi service and check if it is still running
+```sh
+systemctl status luigi
+```
+
+To see the luigi logs:
+```sh
+journalctl -u luigi
+```
+
+To restart the luigi process (if it has exited after one step has failed, for eg. ) for debugging process:
+```sh
+systemctl restart luigi
+```
 
 
 ## Architectural decision records (ie. why did i write it this way):
